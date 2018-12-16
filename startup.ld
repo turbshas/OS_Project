@@ -1,0 +1,73 @@
+SECTIONS
+{
+    . = 0x0; /* From 0x00000000 */
+
+    .text :
+    {
+        *(ISR_VECTORS)  /* vector table */
+        *(.text)         /* program code */
+        *(.eh_frame)
+    }
+
+    .ARM.extab : { *(.ARM.extab* .gnu.linkonce.armextab.*) }
+    .ARM : {
+        __exidx_start = .;
+        *(.ARM.exidx*)
+        __exidx_end = .;
+    }
+
+    .rodata :
+    {
+        *(.rodata)
+        *(.rodata*)
+    }
+
+    /* Location of .data section in binary file */
+    _DATA_ROM_START = .;
+
+#ifdef __STM32F4xx__
+    /* Location of .ccmram section in binary file */
+    _CCM_ROM_START = ADDR(_DATA_ROM_START) + SIZEOF(.data);
+
+    . = 0x10000000;
+    _CCM_RAM_START = .;
+    .ccmram : AT(_CCM_ROM_START)
+    {
+        *(.ccmram)
+        *(.ccmram*)
+    }
+    _CCM_RAM_END = .;
+#endif
+
+    . = 0x20000000;
+    _DATA_RAM_START = .;
+
+    .data : AT(_DATA_ROM_START)
+    {
+        *(.data)
+    }
+
+    _DATA_RAM_END  = .;
+
+    .heap :
+    {
+        __heap_start__ = .;
+        end = __heap_start__;
+        _end = end;
+        KEEP(*(.heap))
+        __heap_end__ = .;
+        __HeapLimit = __heap_end__;
+    }
+
+    _BSS_START = .;
+
+    .bss :
+    {
+        __bss_start__ = .;
+        *(.bss)
+        __bss_end__ = .;
+    }
+
+    _BSS_END = .;
+}
+
