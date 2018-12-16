@@ -1,5 +1,8 @@
+#ifndef _STARTUP_H
+#define _STARTUP_H
+
 #define _PERIPH_DEFN(action)    \
-    action(CRC);              \
+   /* action(CRC);              \
     action(PWR);              \
     action(RCC);              \
     action(GPIO);             \
@@ -13,9 +16,9 @@
     action(WDG);              \
     action(CRYP);             \
     action(RNG);              \
-    action(HASH);             \
+    action(HASH);*/             \
     action(RTC);              \
-    action(I2C);              \
+    /*action(I2C);              \
     action(USART);            \
     action(SPI);              \
     action(SDIO);             \
@@ -23,7 +26,7 @@
     action(ETH);              \
     action(OTG);              \
     action(FSMC);             \
-    action(DBG)
+    action(DBG)*/
 
 
 #define PERIPH_INIT(name) name##_Init()
@@ -34,6 +37,11 @@
 
 /* Peripheral Initializers */
 DECLARE_PERIPHS();
+#ifdef __STM32F4xx__
+PERIPH_DECL(DMA2D);
+PERIPH_DECL(LTDC);
+PERIPH_DECL(SAI);
+#endif
 
 /* Code section start and end points (defined in linker script) */
 extern unsigned int _DATA_ROM_START;
@@ -192,3 +200,4 @@ IRQ_HANDLER_T HASH_RNG_IRQHandler(void)             { Default_Handler(90); }
 IRQ_HANDLER_T FPU_IRQHandler(void)                  { Default_Handler(91); }
 #endif
 
+#endif /* _STARTUP_H */

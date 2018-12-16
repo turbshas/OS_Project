@@ -1,14 +1,38 @@
-# Compile
-#arm-none-eabi-gcc -O0 -c -g -Wall -mcpu=cortex-m3 -mfloat-abi=softfp -mfpu=vfp -mthumb -o startup.o startup.c
+#TODO: make a better solution than this, a Makefile or something
 
-arm-none-eabi-gcc -E -x c startup.ld | grep -v "^#" > startup.ld.preproc
-arm-none-eabi-gcc -O0 -g -Wall -mcpu=cortex-m3 -mfloat-abi=softfp -mfpu=vfp -mthumb -Wl,-Tstartup.ld.preproc -lc --specs=nosys.specs -o startup.elf startup.c
+cd ~/Pebble_Startup
+
+INCLUDES="\
+    -I./drivers \
+    -I./drivers/RTC \
+"
+
+SRC_FILES="\
+    startup.c \
+    ./drivers/RTC/RTC.c \
+"
+
+LINKER_FLAGS="\
+    -Wl,-Tstartup.ld.preproc \
+"
+
+COMPILE_FLAGS="\
+    -O0 \
+    -g \
+    -Wall \
+    -mcpu=cortex-m3 \
+    -mfloat-abi=softfp \
+    -mfpu=vfp \
+    -mthumb \
+    -lc \
+    --specs=nosys.specs \
+"
 
 # Apply preprocessor to our linker script
-#arm-none-eabi-gcc -E -x c startup.ld | grep -v "^#" > startup.ld.preproc
+arm-none-eabi-gcc -E -x c startup.ld | grep -v "^#" > startup.ld.preproc
 
-# Link using our linker script
-#arm-none-eabi-ld -Tstartup.ld.preproc -o startup.elf startup.o
+# Compile and link using our linker script
+arm-none-eabi-gcc $COMPILE_FLAGS $INCLUDES $SRC_FILES $LINKER_FLAGS -o startup.elf
 
 # Turn ELF into binary
 arm-none-eabi-objcopy -O binary startup.elf startup.bin

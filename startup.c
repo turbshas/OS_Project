@@ -182,20 +182,19 @@ __attribute__((section ("ISR_VECTORS"))) const void *isr_vector_table[] = {
 #endif
 };
 
-static const int b = 8;
-static int sum;
-
 int
 main(void)
 {
-    int a = 7;
-    sum = a + b;
-
 //    printf("hello world\n");
 
     INIT_PERIPHS();
+#ifdef __STM32F4xx__
+    PERIPH_INIT(DMA2D);
+    PERIPH_INIT(LTDC);
+    PERIPH_INIT(SAI);
+#endif
 
     for ( ;; ) {}
 
-    return sum;
+    return 0;
 }
