@@ -1,38 +1,53 @@
+OUTPUT_FORMAT("elf32-littlearm", "elf32-bigarm", "elf32-littlearm")
+OUTPUT_ARCH(arm)
+
+MEMORY
+{
+    SRAM0 (rwx) : ORIGIN = 0x20000000, LENGTH = 128K
+
+
+
+    FLASH (rx) : ORIGIN = 0x08000000, LENGTH = 1M
+}
+
 SECTIONS
 {
     . = 0x0;
 
     .text :
     {
-        *(ISR_VECTORS)
+        KEEP(*(ISR_VECTORS))
+        *(.start)
         *(.text)
+        *(.text*)
         *(.eh_frame)
-    }
+        *(.init)
+        *(.fini)
+    } >FLASH
 
     .ARM.extab : { *(.ARM.extab* .gnu.linkonce.armextab.*) }
     .ARM : {
         __exidx_start = .;
         *(.ARM.exidx*)
         __exidx_end = .;
-    }
+    } >FLASH
 
     .rodata :
     {
         *(.rodata)
         *(.rodata*)
-    }
+    } >FLASH
 
 
     _DATA_ROM_START = .;
     . = 0x20000000;
-    _DATA_RAM_START = .;
 
-    .data : AT(_DATA_ROM_START)
+    .data :
     {
+        _DATA_RAM_START = .;
         *(.data)
-    }
-
-    _DATA_RAM_END = .;
+        _DATA_RAM_END = .;
+    } >SRAM0 AT> FLASH
 
     .heap :
     {
@@ -54,4 +69,11 @@ SECTIONS
     }
 
     _BSS_END = .;
+
+    /DISCARD/ :
+    {
+        libc.a ( * )
+        libm.a ( * )
+        libgcc.a ( * )
+    }
 }

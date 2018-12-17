@@ -4,12 +4,20 @@ cd ~/Pebble_Startup
 
 INCLUDES="\
     -I./drivers \
+    -I./drivers/ADC \
+    -I./drivers/I2C \
     -I./drivers/RTC \
+    -I./drivers/SDIO \
+    -I./drivers/SPI \
 "
 
 SRC_FILES="\
     startup.c \
+    ./drivers/ADC/ADC.c \
+    ./drivers/I2C/I2C.c \
     ./drivers/RTC/RTC.c \
+    ./drivers/SDIO/SDIO.c \
+    ./drivers/SPI/SPI.c \
 "
 
 LINKER_FLAGS="\

@@ -12,6 +12,7 @@ Disable_Write_Protection(void)
 static inline void
 Enable_Write_Protection(void)
 {
+    /* Any invalid key will re-enable write protection */
     RTC->WPR |= 0xff;
 }
 
@@ -20,6 +21,7 @@ Enter_Init_Mode(void)
 {
     RTC->ISR |= RTC_ISR_INIT;
 
+    /* Takes 1-2 RTCCLK cycles to actually enter initialization mode */
     unsigned counter = 0;
     while((RTC->ISR & RTC_ISR_INITF) == 0) {
         counter++;

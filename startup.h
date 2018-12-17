@@ -2,15 +2,15 @@
 #define _STARTUP_H
 
 #define _PERIPH_DEFN(action)    \
-   /* action(CRC);              \
+    /*action(CRC);              \
     action(PWR);              \
     action(RCC);              \
     action(GPIO);             \
     action(SYSCFG);           \
     action(EXTI);             \
-    action(DMA);              \
+    action(DMA);*/              \
     action(ADC);              \
-    action(DAC);              \
+    /*action(DAC);              \
     action(DCMI);             \
     action(TIM);              \
     action(WDG);              \
@@ -18,11 +18,11 @@
     action(RNG);              \
     action(HASH);*/             \
     action(RTC);              \
-    /*action(I2C);              \
-    action(USART);            \
+    action(I2C);              \
+    /*action(USART);*/            \
     action(SPI);              \
     action(SDIO);             \
-    action(bxCAN);            \
+    /*action(bxCAN);            \
     action(ETH);              \
     action(OTG);              \
     action(FSMC);             \
@@ -154,8 +154,8 @@ IRQ_HANDLER_T TIM5_IRQHandler(void)                 { Default_Handler(60); }
 IRQ_HANDLER_T SPI3_IRQHandler(void)                 { Default_Handler(61); }
 IRQ_HANDLER_T UART4_IRQHandler(void)                { Default_Handler(62); }
 IRQ_HANDLER_T UART5_IRQHandler(void)                { Default_Handler(63); }
-IRQ_HANDLER_T TIM6_DAC_IRQHandler(void)             { Default_Handler(64); }
-IRQ_HANDLER_T TIM7_IRQHandler(void)                 { Default_Handler(65); }
+IRQ_HANDLER_T TIM6_DAC_IRQHandler(void)             { /*Default_Handler(64);*/ }
+IRQ_HANDLER_T TIM7_IRQHandler(void)                 { /*Default_Handler(65);*/ }
 
 /* DMA2 IRQs */
 IRQ_HANDLER_T DMA2_Stream0_IRQHandler(void)         { Default_Handler(66); }

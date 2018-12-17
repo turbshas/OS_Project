@@ -1,26 +1,42 @@
+OUTPUT_FORMAT("elf32-littlearm", "elf32-bigarm", "elf32-littlearm")
+OUTPUT_ARCH(arm)
+
+MEMORY
+{
+    SRAM0 (rwx)         : ORIGIN = 0x20000000, LENGTH = 128K
+#ifdef __STM32F4xx__
+    CCMRAM0 (rwx)       : ORIGIN = 0x10000000, LENGTH = 64K
+#endif
+    FLASH (rx)          : ORIGIN = 0x08000000, LENGTH = 1M
+}
+
 SECTIONS
 {
-    . = 0x0; /* From 0x00000000 */
+    . = 0x0; /* Start at 0x00000000 */
 
     .text :
     {
-        *(ISR_VECTORS)  /* vector table */
+        KEEP(*(ISR_VECTORS))  /* vector table */
+        *(.start)
         *(.text)         /* program code */
+        *(.text*)
         *(.eh_frame)
-    }
+        *(.init)
+        *(.fini)
+    } >FLASH
 
     .ARM.extab : { *(.ARM.extab* .gnu.linkonce.armextab.*) }
     .ARM : {
         __exidx_start = .;
         *(.ARM.exidx*)
         __exidx_end = .;
-    }
+    } >FLASH
 
     .rodata :
     {
         *(.rodata)
         *(.rodata*)
-    }
+    } >FLASH
 
     /* Location of .data section in binary file */
     _DATA_ROM_START = .;
@@ -30,24 +46,23 @@ SECTIONS
     _CCM_ROM_START = ADDR(_DATA_ROM_START) + SIZEOF(.data);
 
     . = 0x10000000;
-    _CCM_RAM_START = .;
     .ccmram : AT(_CCM_ROM_START)
     {
+        _CCM_RAM_START = .;
         *(.ccmram)
         *(.ccmram*)
-    }
-    _CCM_RAM_END = .;
+        _CCM_RAM_END = .;
+    } >CCMRAM0
 #endif
 
     . = 0x20000000;
-    _DATA_RAM_START = .;
 
-    .data : AT(_DATA_ROM_START)
+    .data :
     {
+        _DATA_RAM_START = .;
         *(.data)
-    }
-
-    _DATA_RAM_END  = .;
+        _DATA_RAM_END  = .;
+    } >SRAM0 AT> FLASH
 
     .heap :
     {
@@ -69,5 +84,12 @@ SECTIONS
     }
 
     _BSS_END = .;
+
+    /DISCARD/ :
+    {
+        libc.a ( * )
+        libm.a ( * )
+        libgcc.a ( * )
+    }
 }
 

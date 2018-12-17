@@ -2,8 +2,8 @@
 #define _DRIVERS_H
 
 #include "driver_common.h"
-/*#include "ADC.h"
-#include "bxCAN.h"
+#include "ADC.h"
+/*#include "bxCAN.h"
 #include "CRC.h"
 #include "CRYP.h"
 #include "DAC.h"
@@ -14,19 +14,24 @@
 #include "EXTI.h"
 #include "FSMC.h"
 #include "GPIO.h"
-#include "HASH.h"
+#include "HASH.h"*/
 #include "I2C.h"
-#include "OTG.h"
+/*#include "OTG.h"
 #include "PWR.h"
 #include "RCC.h"
 #include "RNG.h"*/
 #include "RTC.h"
-/*#include "SDIO.h"
+#include "SDIO.h"
 #include "SPI.h"
-#include "SYSCFG.h"
+/*#include "SYSCFG.h"
 #include "TIM.h"
 #include "USART.h"
 #include "WDG.h"*/
+#ifdef __STM32F4xx__
+#include "DMA2D.h"
+#include "LTDC.h"
+#include "SAI.h"
+#endif
 
 #define TIM2_REGION1_START          (PERIPH_BASE + 0x0)
 #define TIM3_REGION1_START          (PERIPH_BASE + 0x400)
@@ -39,15 +44,10 @@
 #define TIM14_REGION1_START         (PERIPH_BASE + 0x2000)
 #define WWDG_BASE           (PERIPH_BASE + 0x2c00)
 #define IWDG_BASE           (PERIPH_BASE + 0x3000)
-#define SPI2_BASE           (PERIPH_BASE + 0x3800)
-#define SPI3_BASE           (PERIPH_BASE + 0x3c00)
 #define USART2_BASE         (PERIPH_BASE + 0x4400)
 #define USART2_BASE         (PERIPH_BASE + 0x4800)
 #define USART2_BASE         (PERIPH_BASE + 0x4c00)
 #define USART2_BASE         (PERIPH_BASE + 0x5000)
-#define I2C1_BASE           (PERIPH_BASE + 0x5400)
-#define I2C1_BASE           (PERIPH_BASE + 0x5800)
-#define I2C1_BASE           (PERIPH_BASE + 0x5c00)
 #define CAN1_BASE           (PERIPH_BASE + 0x6400)
 #define CAN2_BASE           (PERIPH_BASE + 0x6800)
 #define PWR_BASE            (PERIPH_BASE + 0x7000)
@@ -56,9 +56,6 @@
 #define TIM8_BASE           (PERIPH_BASE + 0x10400)
 #define USART1_BASE         (PERIPH_BASE + 0x11000)
 #define USART6_BASE         (PERIPH_BASE + 0x11400)
-#define ADC_BASE            (PERIPH_BASE + 0x12000)
-#define SDIO_BASE           (PERIPH_BASE + 0x12c00)
-#define SPI1_BASE           (PERIPH_BASE + 0x13000)
 #define SYSCFG_BASE         (PERIPH_BASE + 0x13800)
 #define EXTI_BASE           (PERIPH_BASE + 0x13c00)
 #define TIM9_BASE           (PERIPH_BASE + 0x14000)
@@ -87,5 +84,13 @@
 #define HASH_BASE           (PERIPH_BASE + 0x10060400)
 #define RNG_BASE            (PERIPH_BASE + 0x10060800)
 #define FSMC_CTRL_BASE      0xA0000000
+
+#ifdef __STM32F4xx__
+#define I2S2ext_BASE        (PERIPH_BASE + 0x3400)
+#define I2S3ext_BASE        (PERIPH_BASE + 0x4000)
+#define SAI1_BASE           (PERIPH_BASE + 0x15800)
+#define LCD_TFT_BASE        (PERIPH_BASE + 0x16800)
+#define DMA2D_BASE          (PERIPH_BASE + 0x2b000)
+#endif
 
 #endif /* _DRIVERS_H */

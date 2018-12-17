@@ -185,14 +185,14 @@ __attribute__((section ("ISR_VECTORS"))) const void *isr_vector_table[] = {
 int
 main(void)
 {
-//    printf("hello world\n");
-
     INIT_PERIPHS();
 #ifdef __STM32F4xx__
     PERIPH_INIT(DMA2D);
     PERIPH_INIT(LTDC);
     PERIPH_INIT(SAI);
 #endif
+
+    printf("hello world\n");
 
     for ( ;; ) {}
 
