@@ -1,6 +1,7 @@
 #ifndef _DRIVERS_H
 #define _DRIVERS_H
 
+#include "driver_common.h"
 /*#include "ADC.h"
 #include "bxCAN.h"
 #include "CRC.h"
@@ -27,11 +28,6 @@
 #include "USART.h"
 #include "WDG.h"*/
 
-#include <stdint.h>
-
-#define PERIPH_BASE 0x40000000
-#define PERIPH_SIZE (512 * 1024 * 1024)
-
 #define TIM2_REGION1_START          (PERIPH_BASE + 0x0)
 #define TIM3_REGION1_START          (PERIPH_BASE + 0x400)
 #define TIM4_REGION1_START          (PERIPH_BASE + 0x800)
@@ -41,7 +37,6 @@
 #define TIM12_REGION1_START         (PERIPH_BASE + 0x1800)
 #define TIM13_REGION1_START         (PERIPH_BASE + 0x1c00)
 #define TIM14_REGION1_START         (PERIPH_BASE + 0x2000)
-#define RTC_BKP_BASE        (PERIPH_BASE + 0x2800)
 #define WWDG_BASE           (PERIPH_BASE + 0x2c00)
 #define IWDG_BASE           (PERIPH_BASE + 0x3000)
 #define SPI2_BASE           (PERIPH_BASE + 0x3800)

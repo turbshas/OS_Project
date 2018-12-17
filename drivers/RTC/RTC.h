@@ -1,7 +1,9 @@
 #ifndef _RTC_H
 #define _RTC_H
 
-#include "drivers.h"
+#include "driver_common.h"
+
+#define RTC_BKP_BASE (PERIPH_BASE + 0x2800)
 
 #define RTC_CR_FMT (1u << 6)
 
