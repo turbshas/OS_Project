@@ -72,24 +72,16 @@ SECTIONS
         KEEP(*(.heap))
         __heap_end__ = .;
         __HeapLimit = __heap_end__;
-    }
-
-    _BSS_START = .;
+    } >SRAM0 AT> FLASH
 
     .bss :
     {
+        _BSS_START = .;
         __bss_start__ = .;
         *(.bss)
         __bss_end__ = .;
-    }
+        _BSS_END = .;
+    } >SRAM0 AT> FLASH
 
-    _BSS_END = .;
-
-    /DISCARD/ :
-    {
-        libc.a ( * )
-        libm.a ( * )
-        libgcc.a ( * )
-    }
 }
 

@@ -1,23 +1,25 @@
 #include "RTC.h"
 
-struct RTC_Regs *const RTC = (void *)RTC_BKP_BASE;
+volatile struct RTC_Regs *const RTC = (void *)RTC_BKP_BASE;
 
 static inline void
-Disable_Write_Protection(void)
+disable_write_protection(void)
 {
+    pwr_disable_bd_write_protection();
     RTC->WPR |= 0xca;
     RTC->WPR |= 0x53;
 }
 
 static inline void
-Enable_Write_Protection(void)
+enable_write_protection(void)
 {
     /* Any invalid key will re-enable write protection */
     RTC->WPR |= 0xff;
+    pwr_enable_bd_write_protection();
 }
 
 static inline int
-Enter_Init_Mode(void)
+enter_init_mode(void)
 {
     RTC->ISR |= RTC_ISR_INIT;
 
@@ -25,7 +27,7 @@ Enter_Init_Mode(void)
     unsigned counter = 0;
     while((RTC->ISR & RTC_ISR_INITF) == 0) {
         counter++;
-        if (counter >= 256) {
+        if (counter >= RTC_INIT_TIMEOUT) {
             return -1;
         }
     }
@@ -33,7 +35,7 @@ Enter_Init_Mode(void)
 }
 
 static inline void
-Exit_Init_Mode(void)
+exit_init_mode(void)
 {
     RTC->ISR &= ~RTC_ISR_INIT;
 }
@@ -41,9 +43,9 @@ Exit_Init_Mode(void)
 void
 RTC_Init(void)
 {
-    Disable_Write_Protection();
-    if (Enter_Init_Mode() < 0) {
-        Enable_Write_Protection();
+    disable_write_protection();
+    if (enter_init_mode() < 0) {
+        enable_write_protection();
         return;
     }
 
@@ -56,7 +58,7 @@ RTC_Init(void)
     /* Set time format to 24-hour */
     RTC->CR &= ~RTC_CR_FMT;
 
-    Exit_Init_Mode();
-    Enable_Write_Protection();
+    exit_init_mode();
+    enable_write_protection();
 }
 

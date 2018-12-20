@@ -17,16 +17,16 @@
 #include "HASH.h"*/
 #include "I2C.h"
 /*#include "OTG.h"
-#include "PWR.h"
+#include "PWR.h"*/
 #include "RCC.h"
-#include "RNG.h"*/
+/*#include "RNG.h"*/
 #include "RTC.h"
 #include "SDIO.h"
 #include "SPI.h"
 /*#include "SYSCFG.h"
-#include "TIM.h"
+#include "TIM.h"*/
 #include "USART.h"
-#include "WDG.h"*/
+/*#include "WDG.h"*/
 #ifdef __STM32F4xx__
 #include "DMA2D.h"
 #include "LTDC.h"
@@ -44,18 +44,11 @@
 #define TIM14_REGION1_START         (PERIPH_BASE + 0x2000)
 #define WWDG_BASE           (PERIPH_BASE + 0x2c00)
 #define IWDG_BASE           (PERIPH_BASE + 0x3000)
-#define USART2_BASE         (PERIPH_BASE + 0x4400)
-#define USART2_BASE         (PERIPH_BASE + 0x4800)
-#define USART2_BASE         (PERIPH_BASE + 0x4c00)
-#define USART2_BASE         (PERIPH_BASE + 0x5000)
 #define CAN1_BASE           (PERIPH_BASE + 0x6400)
 #define CAN2_BASE           (PERIPH_BASE + 0x6800)
-#define PWR_BASE            (PERIPH_BASE + 0x7000)
 #define DAC_BASE            (PERIPH_BASE + 0x7400)
 #define TIM1_BASE           (PERIPH_BASE + 0x10000)
 #define TIM8_BASE           (PERIPH_BASE + 0x10400)
-#define USART1_BASE         (PERIPH_BASE + 0x11000)
-#define USART6_BASE         (PERIPH_BASE + 0x11400)
 #define SYSCFG_BASE         (PERIPH_BASE + 0x13800)
 #define EXTI_BASE           (PERIPH_BASE + 0x13c00)
 #define TIM9_BASE           (PERIPH_BASE + 0x14000)
@@ -71,7 +64,6 @@
 #define GPIOH_BASE          (PERIPH_BASE + 0x21c00)
 #define GPIOI_BASE          (PERIPH_BASE + 0x22000)
 #define CRC_BASE            (PERIPH_BASE + 0x23000)
-#define RCC_BASE            (PERIPH_BASE + 0x23800)
 #define FLASH_BASE          (PERIPH_BASE + 0x23c00) /* Location of flash interface register, not flash memory itself */
 #define BKPSRAM_BASE        (PERIPH_BASE + 0x24000)
 #define DMA1_BASE           (PERIPH_BASE + 0x26000)

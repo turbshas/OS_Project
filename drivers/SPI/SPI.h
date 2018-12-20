@@ -19,9 +19,9 @@ struct SPI_Regs {
     uint32_t I2SPR;
 };
 
-extern struct SPI_Regs *const SPI1;
-extern struct SPI_Regs *const SPI2;
-extern struct SPI_Regs *const SPI3;
+extern volatile struct SPI_Regs *const SPI1;
+extern volatile struct SPI_Regs *const SPI2;
+extern volatile struct SPI_Regs *const SPI3;
 
 void SPI_Init(void);
 

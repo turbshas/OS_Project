@@ -36,10 +36,10 @@ struct ADC_Common_Regs {
 
 struct ADC_Regs {
     struct {
-        struct _ADC_Reg regs;
+        volatile struct _ADC_Reg regs;
         uint32_t reserved[44];
     } ADCs[3];
-    struct ADC_Common_Regs Common;
+    volatile struct ADC_Common_Regs Common;
 
 #define ADC1 ADCs[0].regs
 #define ADC2 ADCs[1].regs

@@ -6,18 +6,24 @@ INCLUDES="\
     -I./drivers \
     -I./drivers/ADC \
     -I./drivers/I2C \
+    -I./drivers/PWR \
+    -I./drivers/RCC \
     -I./drivers/RTC \
     -I./drivers/SDIO \
     -I./drivers/SPI \
+    -I./drivers/USART \
 "
 
 SRC_FILES="\
     startup.c \
     ./drivers/ADC/ADC.c \
     ./drivers/I2C/I2C.c \
+    ./drivers/PWR/PWR.c \
+    ./drivers/RCC/RCC.c \
     ./drivers/RTC/RTC.c \
     ./drivers/SDIO/SDIO.c \
     ./drivers/SPI/SPI.c \
+    ./drivers/USART/USART.c \
 "
 
 LINKER_FLAGS="\

@@ -3,9 +3,9 @@
 
 #define _PERIPH_DEFN(action)    \
     /*action(CRC);              \
-    action(PWR);              \
+    action(PWR);*/              \
     action(RCC);              \
-    action(GPIO);             \
+    /*action(GPIO);             \
     action(SYSCFG);           \
     action(EXTI);             \
     action(DMA);*/              \
@@ -19,7 +19,7 @@
     action(HASH);*/             \
     action(RTC);              \
     action(I2C);              \
-    /*action(USART);*/            \
+    action(USART);            \
     action(SPI);              \
     action(SDIO);             \
     /*action(bxCAN);            \

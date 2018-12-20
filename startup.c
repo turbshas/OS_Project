@@ -1,3 +1,4 @@
+#include "drivers.h"
 #include "startup.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -192,7 +193,7 @@ main(void)
     PERIPH_INIT(SAI);
 #endif
 
-    printf("hello world\n");
+    usart_send_string(USART3, "hello world\n", sizeof("hello world\n"));
 
     for ( ;; ) {}
 

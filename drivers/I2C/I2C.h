@@ -19,9 +19,9 @@ struct I2C_Regs {
     uint32_t TRISE;
 };
 
-extern struct I2C_Regs *const I2C1;
-extern struct I2C_Regs *const I2C2;
-extern struct I2C_Regs *const I2C3;
+extern volatile struct I2C_Regs *const I2C1;
+extern volatile struct I2C_Regs *const I2C2;
+extern volatile struct I2C_Regs *const I2C3;
 
 void I2C_Init(void);
 

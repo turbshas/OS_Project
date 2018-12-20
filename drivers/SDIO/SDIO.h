@@ -26,7 +26,7 @@ struct SDIO_Regs {
     uint32_t FIFO;
 };
 
-extern struct SDIO_Regs *const SDIO;
+extern volatile struct SDIO_Regs *const SDIO;
 
 void SDIO_Init(void);
 

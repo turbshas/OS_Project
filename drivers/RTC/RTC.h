@@ -2,6 +2,7 @@
 #define _RTC_H
 
 #include "driver_common.h"
+#include "PWR.h"
 
 #define RTC_BKP_BASE (PERIPH_BASE + 0x2800)
 
@@ -15,6 +16,8 @@
 #define RTC_PRER_SYNC 0x1fff
 
 #define NUM_BKP_REG 20
+
+#define RTC_INIT_TIMEOUT 0x10000
 
 struct RTC_Regs {
     uint32_t TR;
@@ -33,7 +36,7 @@ struct RTC_Regs {
     uint32_t BKPR[NUM_BKP_REG];
 };
 
-extern struct RTC_Regs *const RTC;
+extern volatile struct RTC_Regs *const RTC;
 
 void RTC_Init(void);
 
