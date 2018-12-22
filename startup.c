@@ -195,6 +195,9 @@ main(void)
 
     usart_send_string(USART3, "hello world\n", sizeof("hello world\n"));
 
+    struct RTC_datetime dt;
+    RTC_get_datetime(&dt);
+
     for ( ;; ) {}
 
     return 0;

@@ -40,23 +40,88 @@ exit_init_mode(void)
     RTC->ISR &= ~RTC_ISR_INIT;
 }
 
+static inline void
+disable_wut(void)
+{
+    /* Disable WUT */
+    RTC->CR &= ~RTC_CR_WUTE;
+
+    /* Wait for write flag to go high */
+    while ((RTC->ISR & RTC_ISR_WUTWF) == 0) { }
+}
+
+static inline void
+enable_wut(void)
+{
+    RTC->CR |= RTC_CR_WUTE;
+}
+
+static inline int
+wait_for_synchro(void)
+{
+    uint32_t counter = 0;
+
+    while ((RTC->ISR & RTC_ISR_RSF) == 0) {
+        if (counter == RTC_SYNCHRO_TIMEOUT) {
+            return -1;
+        }
+        counter++;
+    }
+
+    return 0;
+}
+
+int
+RTC_get_datetime(struct RTC_datetime *const datetime)
+{
+    if ((RTC->ISR & RTC_ISR_RSF) == 0) {
+        if (wait_for_synchro() < 0) {
+            return -1;
+        }
+    }
+
+    const uint32_t time_reg = RTC->TR;
+    const uint32_t date_reg = RTC->DR;
+
+    /* Year stored in time register is relative to the year 2000 */
+    datetime->year    = RTC_GET_BCD(date_reg, RTC_DR_Y) + 2000;
+    datetime->month   = RTC_GET_BCD(date_reg, RTC_DR_M);
+    datetime->day     = RTC_GET_BCD(date_reg, RTC_DR_D);
+    datetime->day_of_week = RTC_GET_VAL(date_reg, RTC_DR_WDU);
+
+    datetime->hours   = RTC_GET_BCD(time_reg, RTC_TR_H);
+    datetime->minutes = RTC_GET_BCD(time_reg, RTC_TR_MN);
+    datetime->seconds = RTC_GET_BCD(time_reg, RTC_TR_S);
+
+    return 0;
+}
+
 void
 RTC_Init(void)
 {
     disable_write_protection();
-    if (enter_init_mode() < 0) {
-        enable_write_protection();
-        return;
+    if (enter_init_mode() == 0) {
+        /* Set prescaler values for a 1 Hz clock */
+        /* Required to do sync first, then async */
+        RTC->PRER &= ~(RTC_PRER_ASYNC | RTC_PRER_SYNC);
+        RTC->PRER |= 255u & RTC_PRER_SYNC;
+        RTC->PRER |= (127u << RTC_PRER_ASYNC_SHIFT) & RTC_PRER_ASYNC;
+
+        /* Set time format to 24-hour time */
+        RTC->CR &= ~RTC_CR_FMT;
     }
 
-    /* Set prescaler values for a 1 Hz clock */
-    /* Required to do sync first, then async */
-    RTC->PRER &= ~(RTC_PRER_ASYNC | RTC_PRER_SYNC);
-    RTC->PRER |= 255u & RTC_PRER_SYNC;
-    RTC->PRER |= (127u << RTC_PRER_ASYNC_SHIFT) & RTC_PRER_ASYNC;
-
-    /* Set time format to 24-hour */
-    RTC->CR &= ~RTC_CR_FMT;
+    /* Setup a 1 kHz wakeup timer:
+     *  - Output set to the wakeup timer
+     *  - WUCKSEL set to RTCCLK / 2 (16.384 kHz)
+     *  - WUTR set to 16 (~976.5 us timer tick, closest to 1 ms as possible)
+     */
+    disable_wut();
+    RTC->CR |= (0x3 << RTC_CR_OSEL_SHIFT) & RTC_CR_OSEL;
+    RTC->CR |= (0x3 << RTC_CR_WUCKSEL_SHIFT) & RTC_CR_WUCKSEL;
+    RTC->WUTR &= ~0xffff;
+    RTC->WUTR |= 0x10;
+    enable_wut();
 
     exit_init_mode();
     enable_write_protection();
