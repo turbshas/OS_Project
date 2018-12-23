@@ -37,6 +37,7 @@ SECTIONS
         *(.rodata)
         *(.rodata*)
     } >FLASH
+    _RODATA_SIZE = SIZEOF(.rodata);
 
     /* Location of .data section in binary file */
     _DATA_ROM_START = .;
@@ -53,6 +54,7 @@ SECTIONS
         *(.ccmram*)
         _CCM_RAM_END = .;
     } >CCMRAM0
+    _CCMRAM_SIZE = SIZEOF(.ccmram);
 #endif
 
     . = 0x20000000;
@@ -63,6 +65,7 @@ SECTIONS
         *(.data)
         _DATA_RAM_END  = .;
     } >SRAM0 AT> FLASH
+    _DATA_SIZE = SIZEOF(.data);
 
     .heap :
     {
@@ -73,6 +76,7 @@ SECTIONS
         __heap_end__ = .;
         __HeapLimit = __heap_end__;
     } >SRAM0 AT> FLASH
+    _HEAP_SIZE = SIZEOF(.heap);
 
     .bss :
     {
@@ -82,6 +86,13 @@ SECTIONS
         __bss_end__ = .;
         _BSS_END = .;
     } >SRAM0 AT> FLASH
+    _BSS_SIZE = SIZEOF(.bss);
 
+    /DISCARD/ :
+    {
+        libc.a ( * )
+        libm.a ( * )
+        libgcc.a ( * )
+    }
 }
 
