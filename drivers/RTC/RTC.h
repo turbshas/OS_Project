@@ -106,6 +106,11 @@ struct RTC_datetime {
 extern volatile struct RTC_Regs *const RTC;
 
 int RTC_get_datetime(struct RTC_datetime *const datetime);
+int RTC_set_datetime(const struct RTC_datetime *const datetime);
+int RTC_exit_dst(void);
+int RTC_enter_dst(void);
+void RTC_Enable_WUT_Interrupt(void);
+void RTC_Disable_WUT_Interrupt(void);
 void RTC_Init(void);
 
 #endif /* _RTC_H */
