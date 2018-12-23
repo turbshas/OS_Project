@@ -126,6 +126,74 @@ RTC_set_datetime(const struct RTC_datetime *const datetime)
     return 0;
 }
 
+int
+RTC_exit_dst(void)
+{
+    uint32_t time_reg = RTC->TR;
+
+    if (RTC_GET_BCD(time_reg, RTC_TR_H) == 0) {
+        /* Don't want to subtract when the hour is 0 */
+        return -1;
+    }
+
+    if ((RTC_GET_BCD(time_reg, RTC_TR_MN) == 59) && (RTC_GET_BCD(time_reg, RTC_TR_S) > 55)) {
+        /*
+         * It is recommended not to perform the dst change when the hour
+         * is changing as to not mask the change of the hour.
+         * Giving a 5 second window here.
+         */
+        return -1;
+    }
+    /*
+     * Subtract an hour, then clear bkp bit.
+     * Bkp bit = 0 -> not in DST
+     */
+    RTC->CR |= RTC_CR_SUB1H;
+    RTC->CR &= ~RTC_CR_BKP;
+
+    return 0;
+}
+
+int
+RTC_enter_dst(void)
+{
+    uint32_t time_reg = RTC->TR;
+
+    if (RTC_GET_BCD(time_reg, RTC_TR_H) == 23) {
+        /* Don't want to add when the hour is 23 */
+        return -1;
+    }
+
+    if ((RTC_GET_BCD(time_reg, RTC_TR_MN) == 59) && (RTC_GET_BCD(time_reg, RTC_TR_S) > 55)) {
+        /*
+         * It is recommended not to perform the dst change when the hour
+         * is changing as to not mask the change of the hour.
+         * Giving a 5 second window here.
+         */
+        return -1;
+    }
+    /*
+     * Add an hour, then set bkp bit.
+     * Bkp bit = 1 -> currently in DST
+     */
+    RTC->CR |= RTC_CR_ADD1H;
+    RTC->CR |= RTC_CR_BKP;
+
+    return 0;
+}
+
+void
+RTC_Enable_WUT_Interrupt(void)
+{
+    RTC->CR |= RTC_CR_WUTIE;
+}
+
+void
+RTC_Disable_WUT_Interrupt(void)
+{
+    RTC->CR &= ~RTC_CR_WUTIE;
+}
+
 void
 RTC_Init(void)
 {

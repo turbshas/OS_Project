@@ -36,6 +36,10 @@
 
 #define RTC_CR_OSEL                 0x600000
 #define RTC_CR_OSEL_SHIFT           21u
+#define RTC_CR_BKP                  (1u << 18)
+#define RTC_CR_SUB1H                (1u << 17)
+#define RTC_CR_ADD1H                (1u << 16)
+#define RTC_CR_WUTIE                (1u << 14)
 #define RTC_CR_WUTE                 (1u << 10)
 #define RTC_CR_FMT                  (1u << 6)
 #define RTC_CR_WUCKSEL              0x7
