@@ -96,6 +96,36 @@ RTC_get_datetime(struct RTC_datetime *const datetime)
     return 0;
 }
 
+int
+RTC_set_datetime(const struct RTC_datetime *const datetime)
+{
+    uint32_t time_reg = RTC->TR;
+    uint32_t date_reg = RTC->DR;
+
+    time_reg &= ~(RTC_TR_HT | RTC_TR_HU | RTC_TR_MNT | RTC_TR_MNU | RTC_TR_ST | RTC_TR_SU);
+    date_reg &= ~(RTC_DR_YT | RTC_DR_YU | RTC_DR_WDU | RTC_DR_MT | RTC_DR_MU | RTC_DR_DT | RTC_DR_DU);
+
+    RTC_SET_BCD(date_reg, RTC_DR_Y, datetime->year - 2000);
+    RTC_SET_BCD(date_reg, RTC_DR_M, datetime->month);
+    RTC_SET_BCD(date_reg, RTC_DR_D, datetime->day);
+    RTC_SET_VAL(date_reg, RTC_DR_WDU, datetime->day_of_week);
+
+    RTC_SET_BCD(time_reg, RTC_TR_H, datetime->hours);
+    RTC_SET_BCD(time_reg, RTC_TR_MN, datetime->minutes);
+    RTC_SET_BCD(time_reg, RTC_TR_S, datetime->seconds);
+
+    if (enter_init_mode() < 0) {
+        return -1;
+    }
+
+    RTC->TR = time_reg;
+    RTC->DR = date_reg;
+
+    exit_init_mode();
+
+    return 0;
+}
+
 void
 RTC_Init(void)
 {
@@ -111,16 +141,16 @@ RTC_Init(void)
         RTC->CR &= ~RTC_CR_FMT;
     }
 
-    /* Setup a 1 kHz wakeup timer:
+    /* Setup a 1 Hz wakeup timer:
      *  - Output set to the wakeup timer
      *  - WUCKSEL set to RTCCLK / 2 (16.384 kHz)
-     *  - WUTR set to 16 (~976.5 us timer tick, closest to 1 ms as possible)
+     *  - WUTR set to 16384 (2 ^ 15)
      */
     disable_wut();
     RTC->CR |= (0x3 << RTC_CR_OSEL_SHIFT) & RTC_CR_OSEL;
     RTC->CR |= (0x3 << RTC_CR_WUCKSEL_SHIFT) & RTC_CR_WUCKSEL;
     RTC->WUTR &= ~0xffff;
-    RTC->WUTR |= 0x10;
+    RTC->WUTR |= (1u << 15);
     enable_wut();
 
     exit_init_mode();

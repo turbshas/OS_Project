@@ -63,8 +63,14 @@
 #define RTC_DOW_SATURDAY            0x6
 #define RTC_DOW_SUNDAY              0x7
 
-#define RTC_GET_VAL(reg, mask) ((reg & mask) >> mask##_SHIFT)
-#define RTC_GET_BCD(reg, val) ((RTC_GET_VAL(reg, val##T) * 10) + RTC_GET_VAL(reg, val##U))
+#define RTC_GET_VAL(reg, mask) (((reg) & (mask)) >> (mask##_SHIFT))
+#define RTC_SET_VAL(reg, mask, val) ((reg) |= ((val) << (mask##_SHIFT)) & (mask))
+#define RTC_GET_BCD(reg, mask) ((RTC_GET_VAL((reg), mask##T) * 10) + RTC_GET_VAL((reg), mask##U))
+#define RTC_SET_BCD(reg, mask, val) \
+    do { \
+        RTC_SET_VAL((reg), mask##T, ((val) / 10)); \
+        RTC_SET_VAL((reg), mask##U, ((val) % 10)); \
+    } while (0)
 
 struct RTC_Regs {
     uint32_t TR;
