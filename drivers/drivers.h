@@ -8,9 +8,9 @@
 #include "CRYP.h"
 #include "DAC.h"
 #include "DBG.h"
-#include "DCMI.h"
+#include "DCMI.h"*/
 #include "DMA.h"
-#include "ETH.h"
+/*#include "ETH.h"
 #include "EXTI.h"
 #include "FSMC.h"
 #include "GPIO.h"
@@ -66,8 +66,6 @@
 #define CRC_BASE            (PERIPH_BASE + 0x23000)
 #define FLASH_BASE          (PERIPH_BASE + 0x23c00) /* Location of flash interface register, not flash memory itself */
 #define BKPSRAM_BASE        (PERIPH_BASE + 0x24000)
-#define DMA1_BASE           (PERIPH_BASE + 0x26000)
-#define DMA2_BASE           (PERIPH_BASE + 0x26400)
 #define ETH_BASE            (PERIPH_BASE + 0x28000)
 #define OTG_HS_BASE         (PERIPH_BASE + 0x40000)
 #define OTG_FS_BASE         (PERIPH_BASE + 0x10000000)
@@ -82,7 +80,6 @@
 #define I2S3ext_BASE        (PERIPH_BASE + 0x4000)
 #define SAI1_BASE           (PERIPH_BASE + 0x15800)
 #define LCD_TFT_BASE        (PERIPH_BASE + 0x16800)
-#define DMA2D_BASE          (PERIPH_BASE + 0x2b000)
 #endif
 
 #endif /* _DRIVERS_H */
