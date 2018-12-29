@@ -1,5 +1,4 @@
-*.swp
-*.swo
+*.sw[a-z]
 *.o
 *.preproc
 *.bin

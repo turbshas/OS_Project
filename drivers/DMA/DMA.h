@@ -9,8 +9,51 @@
 #define DMA2D_BASE          (PERIPH_BASE + 0x2b000)
 #endif
 
+
+#define DMA_SxCR_CHSEL_SHIFT    25u
+#define DMA_SxCR_MBURST_SHIFT   23u
+#define DMA_SxCR_PBURST_SHIFT   21u
+#define DMA_SxCR_PL_SHIFT       16u
+#define DMA_SxCR_MSIZE_SHIFT    13u
+#define DMA_SxCR_PSIZE_SHIFT    11u
+#define DMA_SxCR_DIR_SHIFT      6u
+
+#define DMA_SxCR_CHSEL      (7u << DMA_SxCR_CHSEL_SHIFT)
+#define DMA_SxCR_MBURST     (3u << DMA_SxCR_MBURST_SHIFT)
+#define DMA_SxCR_PBURST     (3u << DMA_SxCR_PBURST_SHIFT)
+#define DMA_SxCR_CT         (1u << 19)
+#define DMA_SxCR_DBM        (1u << 18)
+#define DMA_SxCR_PL         (3u << DMA_SxCR_PL_SHIFT)
+#define DMA_SxCR_PINCOS     (1u << 15)
+#define DMA_SxCR_MSIZE      (3u << DMA_SxCR_MSIZE_SHIFT)
+#define DMA_SxCR_PSIZE      (3u << DMA_SxCR_PSIZE_SHIFT)
+#define DMA_SxCR_MINC       (1u << 10)
+#define DMA_SxCR_PINC       (1u << 9)
+#define DMA_SxCR_CIRC       (1u << 8)
+#define DMA_SxCR_DIR        (3u << DMA_SxCR_DIR_SHIFT)
+#define DMA_SxCR_PFCTRL     (1u << 5)
+#define DMA_SxCR_TCIE       (1u << 4)
+#define DMA_SxCR_HTIE       (1u << 3)
+#define DMA_SxCR_TEIE       (1u << 2)
+#define DMA_SxCR_DMEIE      (1u << 1)
+#define DMA_SxCR_EN         (1u << 0)
+#define DMA_SxCR_ALL        0xfefffff
+
+#define DMA_SxFCR_FS_SHIFT  3u
+#define DMA_SxFCR_FTH_SHIFT 0
+
+#define DMA_SxFCR_FEIE      (1u << 7)
+#define DMA_SxFCR_FS        (7u << DMA_SxFCR_FS_SHIFT)
+#define DMA_SxFCR_DMDIS     (1u << 2)
+#define DMA_SxFCR_FTH       (3u << DMA_SxFCR_FTH_SHIFT)
+#define DMA_SxFCR_ALL       0xbf
+
 #define DMA_NUM_STREAMS 8
 #define DMA_NUM_PRIO    4
+
+#define DMA_DIR_P2M 0
+#define DMA_DIR_M2P 1u
+#define DMA_DIR_M2M 2u
 
 struct dma_stream_regs {
     uint32_t CR;
@@ -46,6 +89,7 @@ typedef struct _dma_request {
     uint8_t periph_burst;
     uint8_t mem_burst;
     uint8_t periph_inc;
+    uint8_t periph_inc_offset;
     uint8_t mem_inc;
     uint8_t mode; /* CT, DBM, CIRC, and PFCTRL, FIFO or direct mode */
     uint8_t fifo_threshold;
@@ -65,7 +109,9 @@ typedef struct _dma_request {
 #define DMA_BURST_INCR8  2u
 #define DMA_BURST_INCR16 3u
 
-#define DMA_INC_ENABLE (1u << 7)
+#define DMA_INC_DISABLE 0
+#define DMA_INC_ENABLE 1u
+#define DMA_PERIPH_INC_OFFSET_PSIZE 0
 #define DMA_PERIPH_INC_OFFSET_FIXED 1u
 
 #define DMA_MODE_FIFO             (1u << 4)
@@ -85,6 +131,10 @@ extern dma_t *const DMA2;
 extern dma_t *const DMA2D;
 #endif
 
+void dma_req_init(dma_request_t *const req);
+int dma_periph_to_mem(dma_t *const dma, const void *const mem, const volatile void *const periph, const size_t len, const dma_request_t *const req);
+int dma_mem_to_periph(dma_t *const dma, const void *const mem, const volatile void *const periph, const size_t len, const dma_request_t *const req);
+int dma_mem_to_mem(dma_t *const dma, const void *const mem1, const void *const mem2, const size_t len, const dma_request_t *const req);
 void DMA_Init(void);
 
 #endif /* _DMA_H */
