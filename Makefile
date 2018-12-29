@@ -1,6 +1,7 @@
 SRC_FILES:=\
     startup.c \
     ./drivers/ADC/ADC.c \
+	./drivers/DMA/DMA.c \
     ./drivers/I2C/I2C.c \
     ./drivers/PWR/PWR.c \
     ./drivers/RCC/RCC.c \
@@ -10,8 +11,10 @@ SRC_FILES:=\
     ./drivers/USART/USART.c \
 
 INCLUDES:=\
+	-I./ \
     -I./drivers \
     -I./drivers/ADC \
+	-I./drivers/DMA \
     -I./drivers/I2C \
     -I./drivers/PWR \
     -I./drivers/RCC \
@@ -33,25 +36,25 @@ COMPILE_FLAGS:=\
     -mthumb \
     --specs=nosys.specs
 
-default: binary
+default: startup.bin
 
-startup_ld: startup.ld
-	arm-none-eabi-gcc -E -x c startup.ld | grep -v "^#" > startup.ld.preproc
+startup.ld.preproc: startup.ld
+	arm-none-eabi-gcc -E -x c $< | grep -v "^#" > $@
 
-build: startup_ld
-	arm-none-eabi-gcc $(COMPILE_FLAGS) $(INCLUDES) $(SRC_FILES) $(LINKER_FLAGS) -o startup.elf
+startup.elf: startup.ld.preproc $(SRC_FILES)
+	arm-none-eabi-gcc $(COMPILE_FLAGS) $(INCLUDES) $(SRC_FILES) $(LINKER_FLAGS) -o $@
 
-binary: build startup.elf
-	arm-none-eabi-objcopy -O binary startup.elf startup.bin
+startup.bin: startup.elf
+	arm-none-eabi-objcopy -O binary $< $@
 
-run: binary
-	qemu-pebble -rtc base=localtime -serial null -serial null -serial stdio -gdb tcp::63770,server -machine pebble-bb2 -cpu cortex-m3 -pflash startup.bin -S
+run: startup.bin
+	qemu-pebble -rtc base=localtime -serial null -serial null -serial stdio -gdb tcp::63770,server -machine pebble-bb2 -cpu cortex-m3 -pflash $< -S
 
-debug: binary
-	gdb-multiarch -tui --eval-command="target remote localhost:63770" ./startup.elf
+debug: startup.elf startup.bin
+	gdb-multiarch -tui --eval-command="target remote localhost:63770" $<
 
 clean:
 	rm -rf *.o
 	rm -f startup.ld.preproc startup.elf startup.bin
 
-.PHONY: default startup_ld build binary run debug clean
+.PHONY: default run debug clean
