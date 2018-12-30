@@ -1,6 +1,6 @@
 SRC_FILES := startup.c
 
-INCLUDES :=
+INCLUDES := -I.
 
 include hw/Makefile
 
@@ -19,7 +19,9 @@ COMPILE_FLAGS:=\
 
 all: startup.bin
 
+# Just need the actual rules to run when source file changes, so use an empty rule for .c and .h files
 %.c: ;
+%.h: ;
 
 startup.ld.preproc: startup.ld
 	arm-none-eabi-gcc -E -x c $< | grep -v "^#" > $@
@@ -40,4 +42,4 @@ clean:
 	rm -rf *.o
 	rm -f startup.ld.preproc startup.elf startup.bin
 
-.PHONY: default run debug clean
+.PHONY: all default run debug clean

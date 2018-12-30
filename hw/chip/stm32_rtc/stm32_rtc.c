@@ -1,4 +1,24 @@
-#include "RTC.h"
+#include "stm32_rtc.h"
+#include "stm32_pwr.h"
+
+#define RTC_BKP_BASE (PERIPH_BASE + 0x2800)
+
+struct RTC_Regs {
+    uint32_t TR;
+    uint32_t DR;
+    uint32_t CR;
+    uint32_t ISR;
+    uint32_t PRER;
+    uint32_t WUTR;
+    uint32_t CALIBR;
+    uint32_t ALRMAR;
+    uint32_t ALRMBR;
+    uint32_t WPR;
+    uint32_t TSTR;
+    uint32_t TSDR;
+    uint32_t TAFCR;
+    uint32_t BKPR[NUM_BKP_REG];
+};
 
 volatile struct RTC_Regs *const RTC = (void *)RTC_BKP_BASE;
 

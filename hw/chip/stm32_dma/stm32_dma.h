@@ -1,14 +1,7 @@
 #ifndef _DMA_H
 #define _DMA_H
 
-#include "driver_common.h"
-
-#define DMA1_BASE           (PERIPH_BASE + 0x26000)
-#define DMA2_BASE           (PERIPH_BASE + 0x26400)
-#ifdef __STM32F4xx__
-#define DMA2D_BASE          (PERIPH_BASE + 0x2b000)
-#endif
-
+#include "chip_common.h"
 
 #define DMA_SxCR_CHSEL_SHIFT    25u
 #define DMA_SxCR_MBURST_SHIFT   23u
@@ -125,11 +118,6 @@ typedef struct _dma_request {
 #define DMA_FIFO_THRESH_3QUARTER 2
 #define DMA_FIFO_THRESH_FULL     3
 
-extern dma_t *const DMA1;
-extern dma_t *const DMA2;
-#ifdef __STM32F4xx__
-extern dma_t *const DMA2D;
-#endif
 
 void dma_req_init(dma_request_t *const req);
 int dma_periph_to_mem(dma_t *const dma, const void *const mem, const volatile void *const periph, const size_t len, const dma_request_t *const req);

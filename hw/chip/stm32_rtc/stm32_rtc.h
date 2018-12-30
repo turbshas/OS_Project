@@ -1,11 +1,7 @@
 #ifndef _RTC_H
 #define _RTC_H
 
-#include "driver_common.h"
-#include "PWR.h"
-
-#define RTC_BKP_BASE (PERIPH_BASE + 0x2800)
-
+#include "chip_common.h"
 #define RTC_TR_HT                   0x300000
 #define RTC_TR_HU                   0xf0000
 #define RTC_TR_MNT                  0x7000
@@ -76,23 +72,6 @@
         RTC_SET_VAL((reg), mask##U, ((val) % 10)); \
     } while (0)
 
-struct RTC_Regs {
-    uint32_t TR;
-    uint32_t DR;
-    uint32_t CR;
-    uint32_t ISR;
-    uint32_t PRER;
-    uint32_t WUTR;
-    uint32_t CALIBR;
-    uint32_t ALRMAR;
-    uint32_t ALRMBR;
-    uint32_t WPR;
-    uint32_t TSTR;
-    uint32_t TSDR;
-    uint32_t TAFCR;
-    uint32_t BKPR[NUM_BKP_REG];
-};
-
 struct RTC_datetime {
     uint16_t year;
     uint8_t month;
@@ -102,8 +81,6 @@ struct RTC_datetime {
     uint8_t minutes;
     uint8_t seconds;
 };
-
-extern volatile struct RTC_Regs *const RTC;
 
 int RTC_get_datetime(struct RTC_datetime *const datetime);
 int RTC_set_datetime(const struct RTC_datetime *const datetime);

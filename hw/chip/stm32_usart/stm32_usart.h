@@ -1,14 +1,7 @@
 #ifndef _USART_H
 #define _USART_H
 
-#include "driver_common.h"
-
-#define USART1_BASE         (PERIPH_BASE + 0x11000)
-#define USART2_BASE         (PERIPH_BASE + 0x4400)
-#define USART3_BASE         (PERIPH_BASE + 0x4800)
-#define UART4_BASE          (PERIPH_BASE + 0x4c00)
-#define UART5_BASE          (PERIPH_BASE + 0x5000)
-#define USART6_BASE         (PERIPH_BASE + 0x11400)
+#include "chip_common.h"
 
 #define USART_SR_TXE    (1u << 7)
 #define USART_SR_TC     (1u << 6)
@@ -41,16 +34,9 @@ struct USART_Regs {
 
 typedef volatile struct USART_Regs *const usart_t;
 
-extern usart_t USART1;
-extern usart_t USART2;
-extern usart_t USART3;
-extern usart_t UART4;
-extern usart_t UART5;
-extern usart_t USART6;
-
+extern usart_t USART3; //temp
 int usart_send_byte(usart_t usart, const char byte);
 int usart_send_string(usart_t usart, const char *const str, const uint8_t len);
-
 
 void USART_Init(void);
 

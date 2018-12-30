@@ -29,9 +29,15 @@
  *  - Maybe reserve some streams by default for peripherals with preloaded config where a similar config is used often
  *  - Allow configurable interrupts (setup each of the DMA interrupt to call a user-configurable interrupt)
  */
-#include "DMA.h"
+#include "stm32_dma.h"
 
 #include "debug_stuff.h"
+
+#define DMA1_BASE           (PERIPH_BASE + 0x26000)
+#define DMA2_BASE           (PERIPH_BASE + 0x26400)
+#ifdef __STM32F4xx__
+#define DMA2D_BASE          (PERIPH_BASE + 0x2b000)
+#endif
 
 dma_t *const DMA1 = (void *)DMA1_BASE;
 dma_t *const DMA2 = (void *)DMA2_BASE;

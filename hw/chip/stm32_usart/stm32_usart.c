@@ -1,4 +1,11 @@
-#include "USART.h"
+#include "stm32_usart.h"
+
+#define USART1_BASE         (PERIPH_BASE + 0x11000)
+#define USART2_BASE         (PERIPH_BASE + 0x4400)
+#define USART3_BASE         (PERIPH_BASE + 0x4800)
+#define UART4_BASE          (PERIPH_BASE + 0x4c00)
+#define UART5_BASE          (PERIPH_BASE + 0x5000)
+#define USART6_BASE         (PERIPH_BASE + 0x11400)
 
 usart_t USART1 = (void *)USART1_BASE;
 usart_t USART2 = (void *)USART2_BASE;

@@ -1,4 +1,43 @@
-#include "RCC.h"
+#include "stm32_rcc.h"
+
+#define RCC_BASE            (PERIPH_BASE + 0x23800)
+
+struct RCC_Regs {
+    uint32_t CR;
+    uint32_t PLLCFGR;
+    uint32_t CFGR;
+    uint32_t CIR;
+    uint32_t AHB1RSTR;
+    uint32_t AHB2RSTR;
+    uint32_t AHB3RSTR;
+    uint32_t rsvd0;
+    uint32_t APB1RSTR;
+    uint32_t APB2RSTR;
+    uint32_t rsvd1;
+    uint32_t rsvd2;
+    uint32_t AHB1ENR;
+    uint32_t AHB2ENR;
+    uint32_t AHB3ENR;
+    uint32_t rsvd3;
+    uint32_t APB1ENR;
+    uint32_t APB2ENR;
+    uint32_t rsvd4;
+    uint32_t rsvd5;
+    uint32_t AHB1LPENR;
+    uint32_t AHB2LPENR;
+    uint32_t AHB3LPENR;
+    uint32_t rsvd6;
+    uint32_t APB1LPENR;
+    uint32_t APB2LPENR;
+    uint32_t rsvd7;
+    uint32_t rsvd8;
+    uint32_t BDCR;
+    uint32_t CSR;
+    uint32_t rsvd9;
+    uint32_t rsvd10;
+    uint32_t SSCGR;
+    uint32_t PLLI2SCFGR;
+};
 
 volatile struct RCC_Regs *const RCC = (void *)RCC_BASE;
 
