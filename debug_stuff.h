@@ -1,7 +1,7 @@
 #ifndef _DEBUG_STUFF_H
 #define _DEBUG_STUFF_H
 
-#include "stm32_usart.h"
+#include "usart_driver.h"
 
 void
 assert_printf(const char *const file, int line)

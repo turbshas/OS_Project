@@ -14,23 +14,19 @@ usart_t UART4  = (void *)UART4_BASE;
 usart_t UART5  = (void *)UART5_BASE;
 usart_t USART6 = (void *)USART6_BASE;
 
-static int
+void
 usart_enable(usart_t usart)
 {
     usart->CR1 |= USART_CR1_UE;
-
-    return 0;
 }
 
-static int
+void
 usart_disable(usart_t usart)
 {
     usart->CR1 &= ~USART_CR1_UE;
-
-    return 0;
 }
 
-static inline void
+void
 usart_send(usart_t usart, const uint8_t byte)
 {
     /* Wait for TXE bit to go high */
@@ -38,56 +34,21 @@ usart_send(usart_t usart, const uint8_t byte)
     usart->DR = byte;
 }
 
-static inline void
+/*
+ * Call this before disabling the usart to
+ * ensure it finishes any in progress transmites.
+ */
+void
 usart_finish_send(usart_t usart)
 {
     /* Wait for TC bit to go high before disabling USART */
     while ((usart->SR & USART_SR_TC) == 0);
 }
 
-int
-usart_send_byte(usart_t usart, const char byte)
-{
-    if (byte > 0xff) {
-        return -1;
-    }
-
-    if (usart_enable(usart) < 0) {
-        return -1;
-    }
-
-    usart_send(usart, byte);
-    usart_finish_send(usart);
-
-    usart_disable(usart);
-
-    return 0;
-}
-
-int
-usart_send_string(usart_t usart, const char *const str, const uint8_t len)
-{
-    int count = 0;
-
-    if (usart_enable(usart) < 0) {
-        return -1;
-    }
-
-    for (int i = 0; i < len; i++) {
-        if (str[i] > 0xff) {
-            return count;
-        }
-        usart_send(usart, str[i]);
-        count++;
-    }
-
-    usart_finish_send(usart);
-    usart_disable(usart);
-
-    return count;
-}
-
-static void
+/*
+ * Ready a usart for use.
+ */
+void
 usart_init(usart_t usart)
 {
     usart_enable(usart);
@@ -96,7 +57,10 @@ usart_init(usart_t usart)
     usart->BRR |= (416u << USART_BRR_MANT_SHIFT) & USART_BRR_MANT;
     usart->BRR |= 11u & USART_BRR_FRAC;
 
-    /* Set CR1 */
+    /* Set CR1:
+     *  - Enable transmitter
+     *  - Enable receiver
+     */
     usart->CR1 |= USART_CR1_TE | USART_CR1_RE;
 
     /* Set GTPR (Not yet implemented in QEMU) */
@@ -105,11 +69,5 @@ usart_init(usart_t usart)
     /* Everything else at defaults */
 
     usart_disable(usart);
-}
-
-void
-USART_Init(void)
-{
-    usart_init(USART3);
 }
 

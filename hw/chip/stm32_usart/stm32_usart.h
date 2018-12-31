@@ -34,11 +34,18 @@ struct USART_Regs {
 
 typedef volatile struct USART_Regs *const usart_t;
 
-extern usart_t USART3; //temp
-int usart_send_byte(usart_t usart, const char byte);
-int usart_send_string(usart_t usart, const char *const str, const uint8_t len);
+extern usart_t USART1;
+extern usart_t USART2;
+extern usart_t USART3;
+extern usart_t UART4;
+extern usart_t UART5;
+extern usart_t USART6;
 
-void USART_Init(void);
+void usart_enable(usart_t usart);
+void usart_disable(usart_t usart);
+void usart_send(usart_t, const uint8_t byte);
+void usart_finish_send(usart_t usart);
+void usart_init(usart_t usart);
 
 #endif /* _USART_H */
 

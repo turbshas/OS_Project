@@ -1,37 +1,43 @@
 #ifndef _DRIVERS_H
 #define _DRIVERS_H
 
+#include "usart_driver.h"
+
+/* TODO: these chip drivers.
+ * should move these somewhere else,
+ * but I can do that later
 #include "stm32_adc.h"
-/*#include "stm32_bxcan.h"
+#include "stm32_bxcan.h"
 #include "stm32_crc.h"
 #include "stm32_cryp.h"
 #include "stm32_dac.h"
 #include "stm32_dbg.h"
-#include "stm32_dcmi.h"*/
+#include "stm32_dcmi.h"
 #include "stm32_dma.h"
-/*#include "stm32_eth.h"
+#include "stm32_eth.h"
 #include "stm32_exti.h"
 #include "stm32_fsmc.h"
 #include "stm32_gpio.h"
-#include "stm32_hash.h"*/
+#include "stm32_hash.h"
 #include "stm32_i2c.h"
-/*#include "stm32_otg.h"
-#include "stm32_pwr.h"*/
+#include "stm32_otg.h"
+#include "stm32_pwr.h"
 #include "stm32_rcc.h"
-/*#include "stm32_rng.h"*/
+#include "stm32_rng.h"
 #include "stm32_rtc.h"
 #include "stm32_sdio.h"
 #include "stm32_spi.h"
-/*#include "stm32_syscfg.h"
-#include "stm32_tim.h"*/
+#include "stm32_syscfg.h"
+#include "stm32_tim.h"
 #include "stm32_usart.h"
-/*#include "stm32_wdg.h"*/
+#include "stm32_wdg.h"
 #ifdef __STM32F4xx__
 #include "stm32_dma2d.h"
 #include "stm32_ltdc.h"
 #include "stm32_sai.h"
-#endif
+#endif*/
 
+/* TODO: move these */
 #define TIM2_REGION1_START          (PERIPH_BASE + 0x0)
 #define TIM3_REGION1_START          (PERIPH_BASE + 0x400)
 #define TIM4_REGION1_START          (PERIPH_BASE + 0x800)
