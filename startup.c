@@ -1,3 +1,4 @@
+#include "stm32_rcc.h"
 #include "stm32_rtc.h"
 #include "drivers.h"
 #include "startup.h"
@@ -202,6 +203,7 @@ main(void)
      */
 
     // Test stuff
+    RCC_Init();
     usart_driver_init();
     usart_send_string(USART3, "hello world\n", sizeof("hello world\n"));
 

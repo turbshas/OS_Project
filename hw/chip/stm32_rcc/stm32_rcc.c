@@ -183,8 +183,8 @@ rcc_APB1_set_periph_state(const enum rcc_APB1_periph periph, const enum rcc_stat
     case RCC_APB1_I2C1:     bit = APB1_I2C1;    break;
     case RCC_APB1_UART5:    bit = APB1_UART5;   break;
     case RCC_APB1_UART4:    bit = APB1_UART4;   break;
-    case RCC_APB1_UART3:    bit = APB1_UART3;   break;
-    case RCC_APB1_UART2:    bit = APB1_UART2;   break;
+    case RCC_APB1_USART3:    bit = APB1_UART3;   break;
+    case RCC_APB1_USART2:    bit = APB1_UART2;   break;
     case RCC_APB1_SPI3:     bit = APB1_SPI3;    break;
     case RCC_APB1_SPI2:     bit = APB1_SPI2;    break;
     case RCC_APB1_WWDG:     bit = APB1_WWDG;    break;
@@ -287,8 +287,14 @@ RCC_Init(void)
     RCC->BDCR |= RCC_BDCR_RTCEN | (0x1 << RCC_BDCR_RTCSEL_SHIFT);
 
     /* Enable USARTs */
-    RCC->APB1ENR |= RCC_APB1ENR_UART5EN | RCC_APB1ENR_UART4EN | RCC_APB1ENR_USART3EN | RCC_APB1ENR_USART2EN;
-    RCC->APB2ENR |= RCC_APB2ENR_USART6EN | RCC_APB2ENR_USART1EN;
+    rcc_APB1_set_periph_state(RCC_APB1_UART5, RCC_STATE_CLOCK_ENABLE);
+    rcc_APB1_set_periph_state(RCC_APB1_UART4, RCC_STATE_CLOCK_ENABLE);
+    rcc_APB1_set_periph_state(RCC_APB1_USART3, RCC_STATE_CLOCK_ENABLE);
+    rcc_APB1_set_periph_state(RCC_APB1_USART2, RCC_STATE_CLOCK_ENABLE);
+    rcc_APB2_set_periph_state(RCC_APB2_USART6, RCC_STATE_CLOCK_ENABLE);
+    rcc_APB2_set_periph_state(RCC_APB2_USART1, RCC_STATE_CLOCK_ENABLE);
+    /*RCC->APB1ENR |= RCC_APB1ENR_UART5EN | RCC_APB1ENR_UART4EN | RCC_APB1ENR_USART3EN | RCC_APB1ENR_USART2EN;
+    RCC->APB2ENR |= RCC_APB2ENR_USART6EN | RCC_APB2ENR_USART1EN;*/
 
     /* Enable DMAs */
     RCC->AHB1ENR |= (1u << 22) | (1u << 21);

@@ -97,8 +97,8 @@ enum rcc_APB1_periph {
     RCC_APB1_I2C1,
     RCC_APB1_UART5,
     RCC_APB1_UART4,
-    RCC_APB1_UART3,
-    RCC_APB1_UART2,
+    RCC_APB1_USART3,
+    RCC_APB1_USART2,
     RCC_APB1_SPI3,
     RCC_APB1_SPI2,
     RCC_APB1_WWDG,
@@ -166,7 +166,11 @@ struct RCC_Regs {
     uint32_t PLLI2SCFGR;
 };
 
-void RCC_Init(void);
+void rcc_AHB1_set_periph_state(const enum rcc_AHB1_periph periph, const enum rcc_state state);
+void rcc_AHB2_set_periph_state(const enum rcc_AHB2_periph periph, const enum rcc_state state);
+void rcc_AHB3_set_periph_state(const enum rcc_AHB3_periph periph, const enum rcc_state state);
+void rcc_APB1_set_periph_state(const enum rcc_APB1_periph periph, const enum rcc_state state);
+void rcc_APB2_set_periph_state(const enum rcc_APB2_periph periph, const enum rcc_state state);
 
 #endif /* _RCC_H */
 
