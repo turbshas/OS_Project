@@ -3,6 +3,73 @@
 
 #include "chip_common.h"
 
+#define AHB1_OTGHSULPI  (1u << 30)
+#define AHB1_OTGHS      (1u << 29)
+#define AHB1_ETHPTP     (1u << 28)
+#define AHB1_ETHRX      (1u << 27)
+#define AHB1_ETHTX      (1u << 26)
+#define AHB1_ETHMAC     (1u << 25)
+#define AHB1_DMA2       (1u << 22)
+#define AHB1_DMA1       (1u << 21)
+#define AHB1_BKPSRAM    (1u << 18)
+#define AHB1_SRAM2      (1u << 17)
+#define AHB1_SRAM1      (1u << 16)
+#define AHB1_FLITF      (1u << 15)
+#define AHB1_CRC        (1u << 12)
+#define AHB1_GPIOI      (1u << 8)
+#define AHB1_GPIOH      (1u << 7)
+#define AHB1_GPIOG      (1u << 6)
+#define AHB1_GPIOF      (1u << 5)
+#define AHB1_GPIOE      (1u << 4)
+#define AHB1_GPIOD      (1u << 3)
+#define AHB1_GPIOC      (1u << 2)
+#define AHB1_GPIOB      (1u << 1)
+#define AHB1_GPIOA      (1u << 0)
+
+#define AHB2_OTGFS      (1u << 7)
+#define AHB2_RNG        (1u << 6)
+#define AHB2_HASH       (1u << 5)
+#define AHB2_CRYP       (1u << 4)
+#define AHB2_DCMI       (1u << 0)
+
+#define AHB3_FSMC       (1u << 0)
+
+#define APB1_DAC        (1u << 29)
+#define APB1_PWR        (1u << 28)
+#define APB1_CAN2       (1u << 26)
+#define APB1_CAN1       (1u << 25)
+#define APB1_I2C3       (1u << 23)
+#define APB1_I2C2       (1u << 22)
+#define APB1_I2C1       (1u << 21)
+#define APB1_UART5      (1u << 20)
+#define APB1_UART4      (1u << 19)
+#define APB1_USART3     (1u << 18)
+#define APB1_USART2     (1u << 17)
+#define APB1_SPI3       (1u << 15)
+#define APB1_SPI2       (1u << 14)
+#define APB1_WWDG       (1u << 11)
+#define APB1_TIM14      (1u << 8)
+#define APB1_TIM13      (1u << 7)
+#define APB1_TIM12      (1u << 6)
+#define APB1_TIM7       (1u << 5)
+#define APB1_TIM6       (1u << 4)
+#define APB1_TIM5       (1u << 3)
+#define APB1_TIM4       (1u << 2)
+#define APB1_TIM3       (1u << 1)
+#define APB1_TIM2       (1u << 0)
+
+#define APB2_TIM11      (1u << 18)
+#define APB2_TIM10      (1u << 17)
+#define APB2_TIM9       (1u << 16)
+#define APB2_SYSCFG     (1u << 14)
+#define APB2_SPI1       (1u << 12)
+#define APB2_SDIO       (1u << 11)
+#define APB2_ADC        (1u << 8)
+#define APB2_USART6     (1u << 5)
+#define APB2_USART1     (1u << 4)
+#define APB2_TIM8       (1u << 1)
+#define APB2_TIM1       (1u << 0)
+
 #define RCC_CR_HSION    (1u << 0)
 #define RCC_CR_HSEON    (1u << 16)
 #define RCC_CR_HSEBYP   (1u << 18)
@@ -37,97 +104,6 @@
 #define RCC_BDCR_RTCSEL         0x300
 
 #define RCC_BDCR_RTCSEL_SHIFT   8u
-
-enum rcc_state {
-    RCC_STATE_RESET,
-    RCC_STATE_CLOCK_DISABLE,
-    RCC_STATE_CLOCK_ENABLE,
-    RCC_STATE_CLOCK_LPDISABLE,
-    RCC_STATE_CLOCK_LPENABLE,
-    RCC_STATE_NUM
-};
-
-enum rcc_AHB1_periph {
-    RCC_AHB1_OTGHSULPI,
-    RCC_AHB1_OTGHS,
-    RCC_AHB1_ETHPTP,
-    RCC_AHB1_ETHRX,
-    RCC_AHB1_ETHTX,
-    RCC_AHB1_ETHMAC,
-    RCC_AHB1_DMA2,
-    RCC_AHB1_DMA1,
-    RCC_AHB1_BKPSRAM,
-    RCC_AHB1_SRAM2,
-    RCC_AHB1_SRAM1,
-    RCC_AHB1_FLITF,
-    RCC_AHB1_CRC,
-    RCC_AHB1_GPIOI,
-    RCC_AHB1_GPIOH,
-    RCC_AHB1_GPIOG,
-    RCC_AHB1_GPIOF,
-    RCC_AHB1_GPIOE,
-    RCC_AHB1_GPIOD,
-    RCC_AHB1_GPIOC,
-    RCC_AHB1_GPIOB,
-    RCC_AHB1_GPIOA,
-    RCC_AHB1_NUM
-};
-
-enum rcc_AHB2_periph {
-    RCC_AHB2_OTGFS,
-    RCC_AHB2_RNG,
-    RCC_AHB2_HASH,
-    RCC_AHB2_CRYP,
-    RCC_AHB2_DCMI,
-    RCC_AHB2_NUM
-};
-
-enum rcc_AHB3_periph {
-    RCC_AHB3_FSMC,
-    RCC_AHB3_NUM
-};
-
-enum rcc_APB1_periph {
-    RCC_APB1_DAC,
-    RCC_APB1_PWR,
-    RCC_APB1_CAN2,
-    RCC_APB1_CAN1,
-    RCC_APB1_I2C3,
-    RCC_APB1_I2C2,
-    RCC_APB1_I2C1,
-    RCC_APB1_UART5,
-    RCC_APB1_UART4,
-    RCC_APB1_USART3,
-    RCC_APB1_USART2,
-    RCC_APB1_SPI3,
-    RCC_APB1_SPI2,
-    RCC_APB1_WWDG,
-    RCC_APB1_TIM14,
-    RCC_APB1_TIM13,
-    RCC_APB1_TIM12,
-    RCC_APB1_TIM7,
-    RCC_APB1_TIM6,
-    RCC_APB1_TIM5,
-    RCC_APB1_TIM4,
-    RCC_APB1_TIM3,
-    RCC_APB1_TIM2,
-    RCC_APB1_NUM
-};
-
-enum rcc_APB2_periph {
-    RCC_APB2_TIM11,
-    RCC_APB2_TIM10,
-    RCC_APB2_TIM9,
-    RCC_APB2_SYSCFG,
-    RCC_APB2_SPI1,
-    RCC_APB2_SDIO,
-    RCC_APB2_ADC,
-    RCC_APB2_USART6,
-    RCC_APB2_USART1,
-    RCC_APB2_TIM8,
-    RCC_APB2_TIM1,
-    RCC_APB2_NUM
-};
 
 struct RCC_Regs {
     uint32_t CR;
@@ -166,11 +142,27 @@ struct RCC_Regs {
     uint32_t PLLI2SCFGR;
 };
 
-void rcc_AHB1_set_periph_state(const enum rcc_AHB1_periph periph, const enum rcc_state state);
-void rcc_AHB2_set_periph_state(const enum rcc_AHB2_periph periph, const enum rcc_state state);
-void rcc_AHB3_set_periph_state(const enum rcc_AHB3_periph periph, const enum rcc_state state);
-void rcc_APB1_set_periph_state(const enum rcc_APB1_periph periph, const enum rcc_state state);
-void rcc_APB2_set_periph_state(const enum rcc_APB2_periph periph, const enum rcc_state state);
+void rcc_AHB1_periph_cmd(const uint32_t periph, const int state);
+void rcc_AHB1_LP_periph_cmd(const uint32_t periph, const int state);
+void rcc_AHB1_reset_cmd(const uint32_t periph, const int state);
+
+void rcc_AHB2_periph_cmd(const uint32_t periph, const int state);
+void rcc_AHB2_LP_periph_cmd(const uint32_t periph, const int state);
+void rcc_AHB2_reset_cmd(const uint32_t periph, const int state);
+
+void rcc_AHB3_periph_cmd(const uint32_t periph, const int state);
+void rcc_AHB3_LP_periph_cmd(const uint32_t periph, const int state);
+void rcc_AHB3_reset_cmd(const uint32_t periph, const int state);
+
+void rcc_APB1_periph_cmd(const uint32_t periph, const int state);
+void rcc_APB1_LP_periph_cmd(const uint32_t periph, const int state);
+void rcc_APB1_reset_cmd(const uint32_t periph, const int state);
+
+void rcc_APB2_periph_cmd(const uint32_t periph, const int state);
+void rcc_APB2_LP_periph_cmd(const uint32_t periph, const int state);
+void rcc_APB2_reset_cmd(const uint32_t periph, const int state);
+
+void rcc_init(void);
 
 #endif /* _RCC_H */
 

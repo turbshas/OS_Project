@@ -24,7 +24,7 @@ pwr_enable_bd_write_protection(void)
 }
 
 void
-PWR_Init(void)
+pwr_init(void)
 {
 }
 

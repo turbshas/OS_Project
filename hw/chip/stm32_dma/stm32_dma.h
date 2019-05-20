@@ -118,6 +118,11 @@ typedef struct _dma_request {
 #define DMA_FIFO_THRESH_3QUARTER 2
 #define DMA_FIFO_THRESH_FULL     3
 
+dma_t *const DMA1;
+dma_t *const DMA2;
+#ifdef __STM32F4xx__
+dma_t *const DMA2D;
+#endif
 
 void dma_req_init(dma_request_t *const req);
 int dma_periph_to_mem(dma_t *const dma, const void *const mem, const volatile void *const periph, const size_t len, const dma_request_t *const req);

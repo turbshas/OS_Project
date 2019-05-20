@@ -203,7 +203,7 @@ main(void)
      */
 
     // Test stuff
-    RCC_Init();
+    rcc_init();
     usart_driver_init();
     usart_send_string(USART3, "hello world\n", sizeof("hello world\n"));
 

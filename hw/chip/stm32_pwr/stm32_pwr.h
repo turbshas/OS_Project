@@ -5,7 +5,7 @@
 
 void pwr_disable_bd_write_protection(void);
 void pwr_enable_bd_write_protection(void);
-void PWR_Init(void);
+void pwr_init(void);
 
 #endif
 
