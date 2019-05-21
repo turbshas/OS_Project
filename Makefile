@@ -1,4 +1,6 @@
-SRC_FILES := startup.c
+SRC_FILES := \
+	startup.c \
+	sys_timer.c
 
 INCLUDES := -I.
 

@@ -1,10 +1,12 @@
-#include "stm32_rcc.h"
-#include "stm32_rtc.h"
-#include "drivers.h"
-#include "startup.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "drivers.h"
+#include "startup.h"
+#include "stm32_rcc.h"
+#include "stm32_rtc.h"
+#include "sys_timer.h"
 
 #define __INITIAL_SP ((void *)0x20020000) /* Will have to find a better place for this */
 #define I2C1_LOC ((void *)0x40005400)
@@ -188,9 +190,12 @@ __attribute__((section ("ISR_VECTORS"))) const void *isr_vector_table[] = {
 static void
 System_Init(void)
 {
-    /* Only initialize things required for
+    /*
+     * Only initialize things required for
      * normal operation here e.g. clocks
      */
+    rcc_init();
+    sys_timer_init();
 }
 
 int
@@ -203,7 +208,6 @@ main(void)
      */
 
     // Test stuff
-    rcc_init();
     usart_driver_init();
     usart_send_string(USART3, "hello world\n", sizeof("hello world\n"));
 

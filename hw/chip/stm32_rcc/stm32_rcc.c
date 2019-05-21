@@ -190,8 +190,8 @@ rcc_init(void)
      *  - PLL selected as system clock
      *  - PLLI2S used for I2S clock
      *  - AHB prescaler set to 1
-     *  - APB low speed prescaler set to 4
-     *  - APB high speed prescaler set to 2
+     *  - APB1 (low speed) prescaler set to 4
+     *  - APB2 (high speed) prescaler set to 2
      */
     RCC->CFGR = (0x5 << RCC_CFGR_PPRE1_SHIFT) | (0x4 << RCC_CFGR_PPRE2_SHIFT) | (0x2 << RCC_CFGR_SW_SHIFT);
 
