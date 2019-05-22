@@ -8,7 +8,7 @@
 #include "stm32_rtc.h"
 #include "sys_timer.h"
 
-#define __INITIAL_SP ((void *)0x20020000) /* Will have to find a better place for this */
+#define _INITIAL_SP ((void *)0x20020000) /* Will have to find a better place for this */
 #define I2C1_LOC ((void *)0x40005400)
 
 __attribute__((interrupt("IRQ")))
@@ -45,7 +45,7 @@ Reset_Handler(void)
 }
 
 __attribute__((section ("ISR_VECTORS"))) const void *isr_vector_table[] = {
-    __INITIAL_SP,
+    _INITIAL_SP,
     Reset_Handler,
     NMI_Handler,
     HardFault_Handler,
