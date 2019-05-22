@@ -214,6 +214,8 @@ main(void)
     struct RTC_datetime dt;
     RTC_get_datetime(&dt);
 
+    thread_1();
+
     for ( ;; ) {}
 
     return 0;

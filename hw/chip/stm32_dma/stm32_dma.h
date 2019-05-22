@@ -112,6 +112,7 @@ typedef struct _dma_request {
 #define DMA_MODE_DOUBLE_BUFF      (1u << 2)
 #define DMA_MODE_CIRC_MODE        (1u << 1)
 #define DMA_MODE_PERIPH_FLOW_CTRL (1u << 0)
+#define DMA_MODE_DIRECT           0u
 
 #define DMA_FIFO_THRESH_1QUARTER 0
 #define DMA_FIFO_THRESH_HALF     1

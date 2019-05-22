@@ -23,6 +23,18 @@ struct sys_timer_regs {
 
 static volatile struct sys_timer_regs *const SYST = (void *)SYSTIMER_BASE;
 
+static inline void
+disable_sys_tick(void)
+{
+    SYST->CSR &= ~CSR_TICKINT;
+}
+
+static inline void
+enable_sys_tick(void)
+{
+    SYST->CSR |= CSR_TICKINT;
+}
+
 struct cpu_regs {
     uint32_t R[13];
     uint32_t LR;
@@ -66,12 +78,13 @@ SVCall_Handler(void)
     register void *val asm("r12");
     val = &p;
     asm volatile (
-    /* R12 is pointing to regs_bkp[2] (thread_2). */
+    /* R12 is pointing to the next thread to run. */
     "LDR    R12, [%0]\n\t"
     /* Load the stack pointer. */
-    "LDR    R0, [R12, #0x40]\n\t"
+    "LDR    R0, [R12, %1]\n\t"
     "SUB    R0, R0, #0x20\n\t"
     "MSR    MSP, R0\n\t"
+    "ISB\n\t"
 
     /* Load R0 to R11. */
     "LDMIA  R12!, { R0-R11 }\n\t"
@@ -95,15 +108,24 @@ SVCall_Handler(void)
     "MSR    CONTROL, R2\n\t"
     "BX     LR\n\t"
     :
-    : "r" (val)
-    );
+    : "r" (val), "i" (offsetof(struct cpu_regs, MSP))
+    : "memory" );
 }
 
 static uint32_t ctx_stack[64];
+__attribute__((naked, noreturn))
 static void
 ctx_switcher(void)
 {
-    p = &regs_bkp[2];
+    disable_sys_tick();
+    if (p == &regs_bkp[0]) {
+        p = &regs_bkp[2];
+        regs_bkp[2].PC = (uint32_t)thread_2;
+    } else {
+        p = &regs_bkp[0];
+        regs_bkp[0].PC = (uint32_t)thread_1;
+    }
+    enable_sys_tick();
     asm volatile ("SVC #1");
 }
 
@@ -133,12 +155,19 @@ SysTick_Handler(void)
     "MRS    R9, CONTROL\n\t"
     /* Save registers. */
     "STMIA  R12!, { R0-R9 }\n\t"
+    :
+    : "r" (val)
+    : "memory" );
 
-    /* R12 is now pointing to p[1], load ctx_switcher. */
+    val = &regs_bkp[1];
+
+    asm volatile (
+    /* R12 is now pointing to regs_bkp[1], load ctx_switcher. */
     /* Load the stack pointer. */
-    "LDR    R0, [R12, #0x40]\n\t"
+    "LDR    R0, [R12, %1]\n\t"
     "SUB    R0, R0, #0x20\n\t"
     "MSR    MSP, R0\n\t"
+    "ISB\n\t"
 
     /* Load R0 to R11. */
     "LDMIA  R12!, { R0-R11 }\n\t"
@@ -160,11 +189,10 @@ SysTick_Handler(void)
     "LDMIA  R12!, { R1-R2 }\n\t"
     "MSR    BASEPRI, R1\n\t"
     "MSR    CONTROL, R2\n\t"
-    "ISB\n\t"
     "BX     LR\n\t"
     :
-    : "r" (val)
-    );
+    : "r" (val), "i" (offsetof(struct cpu_regs, MSP))
+    : "memory" );
 }
 
 void
@@ -172,15 +200,15 @@ sys_timer_init(void)
 {
     p = &regs_bkp[0];
     /*
-     * Setup the system timer to tick every 1 ms.
+     * Setup the system timer to tick every 8 ms.
      * System clock is setup for 64 MHz.
      *
      * System timer clock is 64 MHz / 8 = 8 MHz,
-     * so set reload value to 7999 so that it ticks
-     * every 8000 cycles.
+     * so set reload value to 63999 so that it ticks
+     * every 64000 cycles.
      */
     SYST->RVR &= ~RVR_RELOAD;
-    SYST->RVR |= 7999u;
+    SYST->RVR |= 63999u;
 
     /* Set clock source to external clock, enable interrupts. */
     SYST->CSR &= ~CSR_CLKSOURCE;
@@ -192,9 +220,11 @@ sys_timer_init(void)
     regs_bkp[0].MSP = (uint32_t)&t1_stack[63];
 
     regs_bkp[1].PC = (uint32_t)ctx_switcher;
+    regs_bkp[1].PSR = 0x01000000;
     regs_bkp[1].MSP = (uint32_t)&ctx_stack[63];
 
     regs_bkp[2].PC = (uint32_t)thread_2;
+    regs_bkp[2].PSR = 0x01000000;
     regs_bkp[2].MSP = (uint32_t)&t2_stack[63];
     /* Everything else 0. */
 }

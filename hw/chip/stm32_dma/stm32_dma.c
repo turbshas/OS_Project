@@ -115,7 +115,7 @@ check_dma_req(const void *const mem, const volatile void *const periph, const si
     default: break;
     }
 
-    if ((periph_read_size != DMA_XFERSIZE_BYTE) || (mem_read_size != DMA_XFERSIZE_BYTE)) {
+    if ((periph_read_size != 1) || (mem_read_size != 1)) {
         /*
          * Instead of checking buffer boundaries and other things,
          * only allow odd-length transfers with a byte-to-byte transfer size

@@ -1,3 +1,4 @@
+#include "stm32_dma.h"
 #include "stm32_usart.h"
 
 int usart_send_byte(usart_t usart, const char byte);
