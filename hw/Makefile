@@ -4,6 +4,7 @@ INCLUDES += -I$(CURR_MAKEFILE_DIR)
 
 define MAKEFILE_INCLUDES
 include $(CURR_MAKEFILE_DIR)chip/Makefile
+include $(CURR_MAKEFILE_DIR)cpu/Makefile
 include $(CURR_MAKEFILE_DIR)drivers/Makefile
 endef
 

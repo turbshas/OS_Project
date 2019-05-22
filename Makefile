@@ -1,8 +1,6 @@
-SRC_FILES := \
-	startup.c \
-	sys_timer.c
+SRC_FILES:=
 
-INCLUDES := -I.
+INCLUDES:=-I.
 
 include hw/Makefile
 
