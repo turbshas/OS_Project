@@ -8,7 +8,7 @@
 #include "stm32_rtc.h"
 #include "sys_timer.h"
 
-#define _INITIAL_SP ((void *)0x20020000) /* Will have to find a better place for this */
+#define _INITIAL_SP (&main_stack[63])//((void *)0x20020000) /* Will have to find a better place for this */
 #define I2C1_LOC ((void *)0x40005400)
 
 __attribute__((interrupt("IRQ")))
@@ -214,7 +214,7 @@ main(void)
     struct RTC_datetime dt;
     RTC_get_datetime(&dt);
 
-    thread_1();
+    //asm("SVC #0");
 
     for ( ;; ) {}
 
