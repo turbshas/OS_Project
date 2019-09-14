@@ -17,6 +17,24 @@ stm32_syscfg:
 stm32_usart:
  - Interrupt support
  - USART-to-USART communication
+ - USART input
+
+components:
+ - CRC
+ - GPIO
+ - ADC/DAC
+ - Timers
+ - Watchdogs
+ - Cryptographic processor
+ - RNG
+ - HASH processor
+ - I2C
+ - SPI
+ - SDIO
+ - ETH
+ - USB
+ - FSMC
+ - Debug controller
 
 dma_driver:
  - Implement

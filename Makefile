@@ -20,6 +20,9 @@ CC := arm-none-eabi-gcc
 OBJCOPY := arm-none-eabi-objcopy
 
 LINKER_SCRIPT := build/startup.ld.preproc
+ELF := build/startup.elf
+BINARY := build/startup.bin
+
 LINKER_FLAGS:=\
     -Wl,-T$(LINKER_SCRIPT) \
     --specs=nosys.specs
@@ -34,7 +37,7 @@ COMPILE_FLAGS:=\
     -mfpu=vfp \
     -mthumb
 
-all: build/startup.bin
+all: $(BINARY)
 
 # Get make to recompile when header files are changed
 -include $(DEP_FILES)
@@ -54,7 +57,7 @@ build/startup.elf: $(LINKER_SCRIPT) $(OBJ_FILES)
 	@mkdir -p $(dir $@)
 	@$(CC) $(LINKER_FLAGS) $(OBJ_FILES) -o $@
 
-build/startup.bin: build/startup.elf
+$(BINARY) $(ELF)
 	@echo "    BIN   $(notdir $@)"
 	@mkdir -p $(dir $@)
 	@$(OBJCOPY) -O binary $< $@
@@ -64,10 +67,10 @@ QEMU := qemu-pebble
 GDB := gdb-multiarch
 GDB_PORT := 63770
 
-run: build/startup.bin
+run: $(BINARY)
 	$(QEMU) -rtc base=localtime -serial null -serial null -serial stdio -gdb tcp::$(GDB_PORT),server -machine pebble-bb2 -cpu cortex-m3 -pflash $< -S
 
-debug: build/startup.elf build/startup.bin
+debug: $(ELF) $(BINARY)
 	$(GDB) -tui --eval-command="target remote localhost:$(GDB_PORT)" $<
 
 clean:
