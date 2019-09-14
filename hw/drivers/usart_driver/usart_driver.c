@@ -3,10 +3,6 @@
 int
 usart_send_byte(usart_t usart, const char byte)
 {
-    if ((unsigned char)byte > 0xff) {
-        return -1;
-    }
-
     usart_enable(usart);
 
     usart_send(usart, byte);

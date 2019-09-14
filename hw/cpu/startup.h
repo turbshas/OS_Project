@@ -59,6 +59,8 @@ __attribute__((noreturn, noinline, interrupt))
 static void
 Default_Handler(int num)
 {
+    /* Get rid of unused variable warnings */
+    for (int i = 0; i < num; i++) {}
     /* Loop forever */
     for ( ;; ) {}
 }

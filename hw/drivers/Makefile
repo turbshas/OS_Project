@@ -1,9 +1,13 @@
-CURR_MAKEFILE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
-INCLUDES += -I$(CURR_MAKEFILE_DIR)
+MAKEFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
+MAKEFILE_DIR := $(patsubst %/, %, $(dir $(MAKEFILE_PATH)))
+MAIN_MAKEFILE_DIR := ../..
 
-define MAKEFILE_INCLUDES
-include $(CURR_MAKEFILE_DIR)usart_driver/Makefile
-endef
+include $(MAKEFILE_DIR)/$(MAIN_MAKEFILE_DIR)/template.mk
 
-$(eval $(MAKEFILE_INCLUDES))
+ifeq ($(MAKELEVEL),1)
+SUBMODULES :=\
+	usart_driver
+
+include $(patsubst %, $(MAKEFILE_DIR)/%/Makefile, $(SUBMODULES))
+endif
 

@@ -1,12 +1,15 @@
-CURR_MAKEFILE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+MAKEFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
+MAKEFILE_DIR := $(patsubst %/,%, $(dir $(MAKEFILE_PATH)))
+MAIN_MAKEFILE_DIR := ..
 
-INCLUDES += -I$(CURR_MAKEFILE_DIR)
+include $(MAKEFILE_DIR)/$(MAIN_MAKEFILE_DIR)/template.mk
 
-define MAKEFILE_INCLUDES
-include $(CURR_MAKEFILE_DIR)chip/Makefile
-include $(CURR_MAKEFILE_DIR)cpu/Makefile
-include $(CURR_MAKEFILE_DIR)drivers/Makefile
-endef
+ifeq ($(MAKELEVEL),1)
+SUBMODULES :=\
+	chip \
+	cpu \
+	drivers
 
-$(eval $(MAKEFILE_INCLUDES))
+include $(patsubst %, $(MAKEFILE_DIR)/%/Makefile, $(SUBMODULES))
+endif
 

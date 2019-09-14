@@ -1,4 +1,6 @@
-CURR_MAKEFILE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
-INCLUDES += -I$(CURR_MAKEFILE_DIR)
-SRC_FILES += $(CURR_MAKEFILE_DIR)stm32_exti.c
+MAKEFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
+MAKEFILE_DIR := $(patsubst %/,%, $(dir $(MAKEFILE_PATH)))
+MAIN_MAKEFILE_DIR := ../../..
+
+include $(MAKEFILE_DIR)/$(MAIN_MAKEFILE_DIR)/template.mk
 

@@ -48,6 +48,7 @@ dma_t *const DMA2D = (void *)DMA2D_BASE;
 static inline void
 check_dma_req(const void *const mem, const volatile void *const periph, const size_t len, const dma_request_t *const req)
 {
+    /* TODO: what to do with mem? */
     /* Check that values are within range */
     assert((uintptr_t)periph >= PERIPH_BASE);
     assert((uintptr_t)periph < (PERIPH_BASE + PERIPH_SIZE));
@@ -58,6 +59,21 @@ check_dma_req(const void *const mem, const volatile void *const periph, const si
     assert(req->periph_burst < 4);
     assert(req->mem_burst < 4);
     assert(req->fifo_threshold < 4);
+
+    /* Make sure memory is aligned */
+    switch (req->mem_xfer_size) {
+    case DMA_XFERSIZE_WORD:
+        assert((((uintptr_t)mem) & 0x3) == 0);
+        break;
+    case DMA_XFERSIZE_HWORD:
+        assert((((uintptr_t)mem) & 0x1) == 0);
+        break;
+    case DMA_XFERSIZE_BYTE:
+        break;
+    default:
+        /* I don't know how we got here */
+        assert(0);
+    }
 
     if (req->mode & DMA_MODE_PERIPH_FLOW_CTRL) {
         /*

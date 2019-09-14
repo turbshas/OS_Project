@@ -1,15 +1,19 @@
-CURR_MAKEFILE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
-INCLUDES += -I$(CURR_MAKEFILE_DIR)
+MAKEFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
+MAKEFILE_DIR := $(patsubst %/,%, $(dir $(MAKEFILE_PATH)))
+MAIN_MAKEFILE_DIR := ../..
 
-define MAKEFILE_INCLUDES
-include $(CURR_MAKEFILE_DIR)stm32_dma/Makefile
-include $(CURR_MAKEFILE_DIR)stm32_exti/Makefile
-include $(CURR_MAKEFILE_DIR)stm32_pwr/Makefile
-include $(CURR_MAKEFILE_DIR)stm32_rcc/Makefile
-include $(CURR_MAKEFILE_DIR)stm32_rtc/Makefile
-include $(CURR_MAKEFILE_DIR)stm32_syscfg/Makefile
-include $(CURR_MAKEFILE_DIR)stm32_usart/Makefile
-endef
+include $(MAKEFILE_DIR)/$(MAIN_MAKEFILE_DIR)/template.mk
 
-$(eval $(MAKEFILE_INCLUDES))
+ifeq ($(MAKELEVEL),1)
+SUBMODULES :=\
+	stm32_dma \
+	stm32_exti \
+	stm32_pwr \
+	stm32_rcc \
+	stm32_rtc \
+	stm32_syscfg \
+	stm32_usart
+
+include $(patsubst %, $(MAKEFILE_DIR)/%/Makefile, $(SUBMODULES))
+endif
 
