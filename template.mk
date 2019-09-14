@@ -6,7 +6,7 @@ default: all
 	@$(MAKE) $(MAKEFLAGS) $@ -C $(MAIN_MAKEFILE_DIR)
 
 else
-SRC_FILES += $(wildcard $(MAKEFILE_DIR)/*.c)
+SRC_FILES += $(patsubst $(CURDIR)/%,%,$(wildcard $(MAKEFILE_DIR)/*.c))
 INCLUDES += -I$(MAKEFILE_DIR)
 endif
 

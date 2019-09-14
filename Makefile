@@ -9,17 +9,18 @@ INCLUDES := -I.
 MODULES :=\
 	hw
 
-include $(patsubst %, %/Makefile, $(MODULES))
+include $(patsubst %,%/Makefile, $(MODULES))
 
-OBJ_FILES := $(SRC_FILES:.c=.o)
+# Rules for building
+OBJ_FILES := $(patsubst %.c,build/%.o,$(SRC_FILES))
+DEP_FILES := $(OBJ_FILES:.o=.dep)
 
 CC := arm-none-eabi-gcc
 OBJCOPY := arm-none-eabi-objcopy
-QEMU := qemu-pebble
-GDB := gdb-multiarch
 
+LINKER_SCRIPT := build/startup.ld.preproc
 LINKER_FLAGS:=\
-    -Wl,-Tstartup.ld.preproc \
+    -Wl,-T$(LINKER_SCRIPT) \
     --specs=nosys.specs
 
 COMPILE_FLAGS:=\
@@ -32,32 +33,44 @@ COMPILE_FLAGS:=\
     -mfpu=vfp \
     -mthumb
 
-all: startup.bin
+all: build/startup.bin
 
-# Just need the actual rules to run when source file changes, so use an empty rule for .c and .h files
-%.o: %.c
-	$(CC) -c $(COMPILE_FLAGS) $(INCLUDES) $^ -o $@
+# Get make to recompile when header files are changed
+-include $(DEP_FILES)
 
-%.h: ;
+build/%.o: %.c
+	@echo "    CC    $<"
+	@mkdir -p $(dir $@)
+	@$(CC) -c -MMD $(COMPILE_FLAGS) $(INCLUDES) $< -o $@
 
-startup.ld.preproc: startup.ld
-	$(CC) -E -x c $< | grep -v "^#" > $@
+$(LINKER_SCRIPT): startup.ld
+	@echo "   GEN    $(notdir $@)"
+	@mkdir -p $(dir $@)
+	@$(CC) -E -x c $< | grep -v "^#" > $@
 
-startup.elf: startup.ld.preproc $(OBJ_FILES)
-	$(CC) $(LINKER_FLAGS) $(OBJ_FILES) -o $@
+build/startup.elf: $(LINKER_SCRIPT) $(OBJ_FILES)
+	@echo "    LD    $(notdir $@)"
+	@mkdir -p $(dir $@)
+	@$(CC) $(LINKER_FLAGS) $(OBJ_FILES) -o $@
 
-startup.bin: startup.elf
-	$(OBJCOPY) -O binary $< $@
+build/startup.bin: build/startup.elf
+	@echo "   BIN    $(notdir $@)"
+	@mkdir -p $(dir $@)
+	@$(OBJCOPY) -O binary $< $@
 
-run: startup.bin
-	$(QEMU) -rtc base=localtime -serial null -serial null -serial stdio -gdb tcp::63770,server -machine pebble-bb2 -cpu cortex-m3 -pflash $< -S
+# Rules for running and debugging
+QEMU := qemu-pebble
+GDB := gdb-multiarch
+GDB_PORT := 63770
 
-debug: startup.elf startup.bin
-	$(GDB) -tui --eval-command="target remote localhost:63770" $<
+run: build/startup.bin
+	$(QEMU) -rtc base=localtime -serial null -serial null -serial stdio -gdb tcp::$(GDB_PORT),server -machine pebble-bb2 -cpu cortex-m3 -pflash $< -S
+
+debug: build/startup.elf build/startup.bin
+	$(GDB) -tui --eval-command="target remote localhost:$(GDB_PORT)" $<
 
 clean:
-	@rm -rf $(OBJ_FILES)
-	@rm -f startup.ld.preproc startup.elf startup.bin
+	@rm -rf build
 
 .PHONY: all default run debug clean
 

@@ -1,5 +1,8 @@
 *.sw[a-z]
 *.o
+*.o
 *.preproc
 *.bin
 *.elf
+build/**
+
