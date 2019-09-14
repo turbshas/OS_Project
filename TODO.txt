@@ -1,0 +1,45 @@
+stm32_dma:
+ - DMA interrupt support
+ - Support for multiple requests to a stream
+ - These should probably be done by a DMA driver
+
+stm32_pwr:
+ - Power functions, e.g. configuring deep sleep, standby mode
+ - Turning on/off peripherals
+
+stm32_rtc:
+ - More options for interrupts
+
+stm32_syscfg:
+ - Memory remapping to 0x00000000
+ - PHY interface for Ethernet MAC
+
+stm32_usart:
+ - Interrupt support
+ - USART-to-USART communication
+
+dma_driver:
+ - Implement
+ - Chooses highest prio request line that is available
+ - Request lines freed on completion
+
+pwr_driver:
+ - Implement
+ - Request peripherals to be turned on/off
+
+mem_mgr:
+ - Handle dynamic allocation
+ - Skiplist
+
+flash_mgr:
+ - Handle dynamic allocation of flash memory
+
+process_mgr:
+ - No idea yet
+
+OS/kernel init:
+ - Will probably find out once I start implementing it
+
+Misc:
+ - Log function that serves as printf: formats and writes to usart
+

@@ -1,3 +1,4 @@
+# Lower Makefiles use MAKELEVEL to make decisions, so if make is invoked from this directory, make it look like a recursive invocation
 ifeq ($(MAKELEVEL),0)
 MAKELEVEL := 1
 endif
@@ -44,7 +45,7 @@ build/%.o: %.c
 	@$(CC) -c -MMD $(COMPILE_FLAGS) $(INCLUDES) $< -o $@
 
 $(LINKER_SCRIPT): startup.ld
-	@echo "   GEN    $(notdir $@)"
+	@echo "    GEN   $(notdir $@)"
 	@mkdir -p $(dir $@)
 	@$(CC) -E -x c $< | grep -v "^#" > $@
 
@@ -54,7 +55,7 @@ build/startup.elf: $(LINKER_SCRIPT) $(OBJ_FILES)
 	@$(CC) $(LINKER_FLAGS) $(OBJ_FILES) -o $@
 
 build/startup.bin: build/startup.elf
-	@echo "   BIN    $(notdir $@)"
+	@echo "    BIN   $(notdir $@)"
 	@mkdir -p $(dir $@)
 	@$(OBJCOPY) -O binary $< $@
 

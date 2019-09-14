@@ -1,4 +1,4 @@
-# Requires MAKEFILE_DIR and MAIN_MAKEFILE_DIR and variables to be set
+# Requires MAKEFILE_DIR and MAIN_MAKEFILE_DIR variables to be set
 ifeq ($(MAKELEVEL),0)
 default: all
 

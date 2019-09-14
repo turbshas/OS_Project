@@ -46,7 +46,7 @@ dma_t *const DMA2D = (void *)DMA2D_BASE;
 #endif
 
 static inline void
-check_dma_req(const void *const mem, const volatile void *const periph, const size_t len, const dma_request_t *const req)
+check_dma_req(const void *const mem, const volatile void *const periph, const size_t len, const struct dma_request *const req)
 {
     /* TODO: what to do with mem? */
     /* Check that values are within range */
@@ -160,7 +160,7 @@ check_dma_req(const void *const mem, const volatile void *const periph, const si
  * Reads a dma request and formats it to fit into the stream registers
  */
 static inline void
-read_dma_request(dma_t *const dma, const dma_request_t *const req, struct dma_stream_regs *const stream_cfg)
+read_dma_request(dma_t *const dma, const struct dma_request *const req, struct dma_stream_regs *const stream_cfg)
 {
     stream_cfg->CR = (dma->stream[req->stream].CR & (~DMA_SxCR_ALL));
     stream_cfg->CR |= req->priority << DMA_SxCR_PL_SHIFT;
@@ -197,7 +197,7 @@ read_dma_request(dma_t *const dma, const dma_request_t *const req, struct dma_st
     stream_cfg->FCR |= req->fifo_threshold << DMA_SxFCR_FTH_SHIFT;
 }
 
-static inline void
+static void
 dma_set_config(dma_t *const dma, const uint8_t stream, const struct dma_stream_regs *const stream_cfg)
 {
     /* Disable DMA stream so we can modify the registers */
@@ -215,7 +215,7 @@ dma_set_config(dma_t *const dma, const uint8_t stream, const struct dma_stream_r
 }
 
 void
-dma_req_init(dma_request_t *const req)
+dma_req_init(struct dma_request *const req)
 {
     req->stream = 7;
     req->priority = DMA_PRIO_HIGH;
@@ -231,7 +231,7 @@ dma_req_init(dma_request_t *const req)
 }
 
 int
-dma_periph_to_mem(dma_t *const dma, const void *const mem, const volatile void *const periph, const size_t len, const dma_request_t *const req)
+dma_periph_to_mem(dma_t *const dma, const void *const mem, const volatile void *const periph, const size_t len, const struct dma_request *const req)
 {
     /* Do debug error checking */
     check_dma_req(mem, periph, len, req);
@@ -258,7 +258,7 @@ dma_periph_to_mem(dma_t *const dma, const void *const mem, const volatile void *
 }
 
 int
-dma_mem_to_periph(dma_t *const dma, const void *const mem, const volatile void *const periph, const size_t len, const dma_request_t *const req)
+dma_mem_to_periph(dma_t *const dma, const void *const mem, const volatile void *const periph, const size_t len, const struct dma_request *const req)
 {
     /* Do debug error checking */
     check_dma_req(mem, periph, len, req);
@@ -286,7 +286,7 @@ dma_mem_to_periph(dma_t *const dma, const void *const mem, const volatile void *
 }
 
 int
-dma_mem_to_mem(dma_t *const dma, const void *const mem1, const void *const mem2, const size_t len, const dma_request_t *const req)
+dma_mem_to_mem(dma_t *const dma, const void *const mem1, const void *const mem2, const size_t len, const struct dma_request *const req)
 {
     /* Do debug error checking */
     check_dma_req(mem1, mem2, len, req);

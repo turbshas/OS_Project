@@ -20,7 +20,7 @@ usart_send_string(usart_t usart, const char *const str, const uint8_t len)
 
     usart_enable(usart);
 
-    dma_request_t dma_req = {
+    struct dma_request dma_req = {
         .stream = 0,
         .priority = DMA_PRIO_LOW,
         .periph_xfer_size = DMA_XFERSIZE_BYTE,

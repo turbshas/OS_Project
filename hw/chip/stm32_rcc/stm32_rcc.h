@@ -142,6 +142,11 @@ struct RCC_Regs {
     uint32_t PLLI2SCFGR;
 };
 
+/*
+ * Periph commands enable/disable each peripheral
+ * Low-Power periph commands enable/disable each peripheral in low power mode
+ * Reset commands reset each peripheral
+ */
 void rcc_AHB1_periph_cmd(const uint32_t periph, const int state);
 void rcc_AHB1_LP_periph_cmd(const uint32_t periph, const int state);
 void rcc_AHB1_reset_cmd(const uint32_t periph, const int state);
