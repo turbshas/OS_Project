@@ -1,6 +1,9 @@
 #include "sys_timer.h"
 
 #define SYSTIMER_BASE 0xe000e010
+#define SYS_CTL_BLOCK_BASE 0xe000e008
+#define ICSR_PENDSVSET  (1u << 28)
+#define ICSR_PENDSVCLR  (1u << 27)
 
 #define CSR_COUNTFLAG   (1u << 16)
 #define CSR_CLKSOURCE   (1u << 2)
@@ -23,16 +26,53 @@ struct sys_timer_regs {
 
 static volatile struct sys_timer_regs *const SYST = (void *)SYSTIMER_BASE;
 
-static inline void
+struct sys_ctl_block {
+    uint32_t ACTLR;
+    uint32_t rsvd1;
+    struct sys_timer_regs st_regs;
+    uint32_t rsvd2[824];
+    uint32_t CPUID;
+    uint32_t ICSR;
+    uint32_t VTOR;
+    uint32_t AIRCR;
+    uint32_t SCR;
+    uint32_t CCR;
+    uint32_t SHPR1;
+    uint32_t SHPR2;
+    uint32_t SHPR3;
+    uint32_t SHCRS;
+    uint32_t CFSR;
+    uint32_t MMSR;
+    uint32_t BFSR;
+    uint32_t UFSR;
+    uint32_t HFSR;
+    uint32_t MMAR;
+    uint32_t BFAR;
+    uint32_t AFSR;
+};
+
+static volatile struct sys_ctl_block *const SYS_CTL = (void *)SYS_CTL_BLOCK_BASE;
+
+static void
 disable_sys_tick(void)
 {
     SYST->CSR &= ~CSR_TICKINT;
 }
 
-static inline void
+static void
 enable_sys_tick(void)
 {
     SYST->CSR |= CSR_TICKINT;
+}
+
+static void
+set_pendSV(void) {
+    SYS_CTL->ICSR |= ICSR_PENDSVSET;
+}
+
+static void
+clear_pendSV(void) {
+    SYS_CTL->ICSR |= ICSR_PENDSVCLR;
 }
 
 struct cpu_regs_on_stack {
@@ -140,15 +180,16 @@ SysTick_Handler(void)
     val = &active_stack;
     asm volatile (
     /* Get stack value. */
-    "TST    LR, #0x4\n\t"
+    "TST    LR, #0x4\n\t" /* Bit 3 of LR says which stack is being used */
     "ITE    EQ\n\t"
     "MRSEQ  R0, MSP\n\t"
     "MRSNE  R0, PSP\n\t"
     /* Save register R4 to R11 to stack. */
-    "STMDB  R0!, { R4-R11 }\n\t"
+    "STMDB  R0!, { R4-R11 }\n\t" /* STM Decrement Before/Full Descending */
     /* Figure out privileges, stack used. */
+    /* Privileges and stack used will be stored in the lower 2 bits of the stack pointer as it is 4-byte aligned anyway */
     "MRS    R2, CONTROL\n\t"
-    "TST    R2, #0x1\n\t"
+    "TST    R2, #0x1\n\t" /* Bit 0 of Control register stores whether priv/unpriv */
     "IT     NE\n\t"
     "ORRNE  R0, R0, #0x2\n\t" /* Priv/unpriv */
     "TST    LR, #0x4\n\t"

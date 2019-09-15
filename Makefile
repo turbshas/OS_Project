@@ -8,7 +8,8 @@ SRC_FILES :=
 INCLUDES := -I.
 
 MODULES :=\
-	hw
+	hw \
+	os
 
 include $(patsubst %,%/Makefile, $(MODULES))
 
@@ -57,7 +58,7 @@ build/startup.elf: $(LINKER_SCRIPT) $(OBJ_FILES)
 	@mkdir -p $(dir $@)
 	@$(CC) $(LINKER_FLAGS) $(OBJ_FILES) -o $@
 
-$(BINARY) $(ELF)
+$(BINARY): $(ELF)
 	@echo "    BIN   $(notdir $@)"
 	@mkdir -p $(dir $@)
 	@$(OBJCOPY) -O binary $< $@
