@@ -3,6 +3,12 @@
 
 #include <stdio.h>
 
+#define MPU_ATTR_AP 0x7000000
+#define MPU_ATTR_TEX 0x380000
+#define MPU_ATTR_S 0x40000
+#define MPU_ATTR_C 0x20000
+#define MPU_ATTR_B 0x10000
+
 #define MPU_TEX_0 0x0
 #define MPU_TEX_1 0x1
 #define MPU_TEX_2 0x2
@@ -26,24 +32,28 @@
 #define MPU_AP_RSVD     0x4
 #define MPU_AP_RO_NONE  0x5
 #define MPU_AP_RO_RO    0x6
-#define MPU_AP_RO_RO    0x7
-
-/* Notes:
- *  - Enable MPU
- *  - Disable MPU during faults
- *  - Enable default region
- */
+#define MPU_AP_RO_RO2   0x7 /* Both 0x6 and 0x7 result in RO/RO */
 
 struct mpu_region {
     uint32_t addr;
     uint32_t attr_size; /* Stores both attributes and size (same reg) */
 };
 
+/* Requirements on address and size:
+ * Size must be greater than 3 and less than 32
+ * The only valid bits of address are 31:(Size + 1)
+ */
 uint32_t mpu_get_addr(const struct mpu_region *const region);
 uint32_t mpu_get_size(const struct mpu_region *const region);
-int mpu_set_addr_size(struct mpu_region *const region, const uint32_t addr, const int size);
+int mpu_set_addr_size(struct mpu_region *const region, const uint32_t addr, const uint32_t size);
+/*
+ * SRD is only valid for regions of size >= 128 B, this will be
+ * checked while setting the config.
+ *
+ * SRD is a bitmap - one bit for each of the 8 subregions starting from bit 0.
+ */
 uint32_t mpu_get_srd(const struct mpu_region *const region);
-void mpu_set_srd(struct mpu_region *const region, const uint32_t srd);
+int mpu_set_srd(struct mpu_region *const region, const uint32_t srd);
 /*
  * Valid combinations: (x = don't care, b = determines shareable/unshareable)
  * TEX      C B S
@@ -74,14 +84,22 @@ void mpu_set_srd(struct mpu_region *const region, const uint32_t srd);
  * System - Vendor  0xE0100000  0xffffffff  Y   -       - Y Device
  */
 uint32_t mpu_get_attr(const struct mpu_region *const region);
-int mpu_set_attr(struct mpu_region *const region, const int type_expansion, const int executable, const int cacheable, const int bufferable, const int shareable);
+int mpu_set_attr(struct mpu_region *const region, const unsigned type_expansion, const unsigned executable, const unsigned cacheable, const unsigned bufferable, const unsigned shareable);
 uint32_t mpu_get_ap(const struct mpu_region *const region);
 int mpu_set_ap(struct mpu_region *const region, const uint32_t ap);
 
 /* When setting the config, it will first be checked for validity */
 void mpu_region_init(struct mpu_region *const region);
-int mpu_get_config(const int num, struct mpu_region *const region);
-int mpu_set_config(const int num, const struct mpu_region *const region);
+int mpu_get_config(const unsigned num, struct mpu_region *const region);
+int mpu_set_config(const unsigned num, const struct mpu_region *const region);
+int mpu_region_enable(const unsigned num);
+int mpu_region_disable(const unsigned num);
+
+/* Notes:
+ *  - Enable MPU
+ *  - Disable MPU during faults
+ *  - Enable default region
+ */
 void mpu_init(void);
 
 #endif /* MPU_H */

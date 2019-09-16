@@ -6,6 +6,7 @@ include $(MAKEFILE_DIR)/$(MAIN_MAKEFILE_DIR)/template.mk
 
 ifeq ($(MAKELEVEL),1)
 SUBMODULES :=\
+	mem_mgr \
 	proc_mgr
 
 include $(patsubst %, $(MAKEFILE_DIR)/%/Makefile, $(SUBMODULES))
