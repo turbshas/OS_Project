@@ -21,7 +21,9 @@ struct thread {
 
 struct process {
     uint32_t process_id;
-    struct mpu_region mem_regions[8];
+    uint8_t regions_en;
+    uint8_t padding[3];
+    struct mpu_region mem_regions[8]; /* TODO: make this a linked list as well? */
     struct thread threads;
 };
 
