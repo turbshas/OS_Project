@@ -198,6 +198,8 @@ System_Init(void)
     sys_timer_init();
 }
 
+extern void alloc_init(void);
+extern void *ker_malloc(const size_t size);
 int
 main(void)
 {
@@ -214,7 +216,8 @@ main(void)
     struct RTC_datetime dt;
     RTC_get_datetime(&dt);
 
-    //asm("SVC #0");
+    alloc_init();
+    void *p = ker_malloc(64);
 
     for ( ;; ) {}
 

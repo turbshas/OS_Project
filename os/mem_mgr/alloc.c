@@ -19,7 +19,12 @@
  *         |______|   |_______|   |______|   |______|   |______|   |______|
  */
 
-#define NUM_FREE_LISTS 4
+#define SRAM_SIZE (128 * 1024)
+#define NUM_FREE_LISTS 4u
+#define MIN_ALLOC_SIZE 8u
+
+extern unsigned int _ALLOCABLE_MEM;
+extern unsigned int _DATA_RAM_START;
 
 /*
  * This struct will be placed at the beginning of each free entry. Thus, it will
@@ -32,24 +37,25 @@
  */
 struct free_entry {
     size_t size;
-    void *next[NUM_FREE_LISTS];
-}
+    struct free_entry *next[NUM_FREE_LISTS];
+};
 
 struct list_links {
-    struct free_entry *lists[NUM_FREE_LISTS];
-}
+    /* Each pointer points to a next value of a free_entry element */
+    struct free_entry **lists[NUM_FREE_LISTS];
+};
 
-/* Pointer to the initial block of memory */
-static struct free_entry *free_list;
+/* Start of allocable memory block (and size), maybe make this a macro? */
+static void *const ALLOCABLE_MEM_START = &_ALLOCABLE_MEM;
+static size_t ALLOCABLE_MEM_SIZE;
 
 /* Entry point for each skip list */
-static struct list_links skip_lists;
+static struct free_entry free_list_start;
 
 /*
  * Planned interface:
  *  1) ker_malloc:
- *    - params: size of memory, start, and end (range for where to get memory from)
- *      - allows kernel to only allocate a process memory in its address space
+ *    - params: size of memory
  *    - traverse free list until past start
  *    - find first free entry of sufficient size to allocate request
  *    - if exact match or leftover would be too small: allocate entire entry
@@ -57,14 +63,14 @@ static struct list_links skip_lists;
  *    - previous entries need to be updated to point to correct next entry
  *      - use 2 list_links objects, 1 behind the other
  *  2) ker_calloc:
- *    - params: size of memory, start, and end addresses
+ *    - params: size of memory
  *    - calls ker_malloc, zeroes out memory
  *  3) ker_realloc:
- *    - params: new size of memory, old pointer, start, and end addresses
+ *    - params: old size of memory, new size of memory, old pointer
  *    - if there is a block directly next to old one (and it fits), expand it
  *    - else, allocate new block, copy data over, and free old block
  *  4) ker_free:
- *    - params: pointer
+ *    - params: size, pointer
  *    - find spot where block should go in free list
  *    - if contiguous with next block, merge with next block
  *    - if contiguous with previous block, merge with previous
@@ -81,4 +87,138 @@ static struct list_links skip_lists;
  *    (by communicating end of memory used in the OS binary) and size will be
  *    computed from this
  */
+
+//TODO: can do this with a lookup table?
+static unsigned
+which_skiplist_by_size(const size_t size) {
+    if (size >= 1024) {
+        return 3;
+    } else if (size >= 64) {
+        return 2;
+    } else if (size >= 16) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+void *
+ker_malloc(const size_t size) {
+    if (size == 0) {
+        return NULL;
+    }
+
+    const unsigned skip_list = which_skiplist_by_size(size);
+
+    struct free_entry *p = free_list_start.next[skip_list];
+    struct list_links links;
+    for (unsigned i = 0; i < NUM_FREE_LISTS; i++) {
+        links.lists[i] = &free_list_start.next[i];
+    }
+
+    void *ret = NULL;
+    while (p) {
+        if (p->size >= size) {
+            /* We can use this block of memory */
+            if (p->size < (size + MIN_ALLOC_SIZE)) {
+                /*
+                 * If we allocated this block, the leftover would
+                 * be too small. Allocate the whole thing
+                 */
+                ret = p;
+
+                /* Update pointers that pointed at p to point to the block after p */
+                for (unsigned i = 0; i <= skip_list; i++) {
+                    *(links.lists[i]) = p->next[i];
+                }
+                break;
+            } else {
+                /* We need to split the block */
+                ret = p;
+
+                /* Copy values to intermediate in case of overlap */
+                struct free_entry temp_entry = {
+                    .size = p->size - size,
+                };
+                for (unsigned i = 0; i <= skip_list; i++) {
+                    temp_entry.next[i] = p->next[i];
+                }
+
+                /* Set the values for the new entry */
+                struct free_entry *new_entry = (void *)((uintptr_t)p + size);
+                new_entry->size = temp_entry.size;
+                /* Copy the next pointers that are valid for the new entry from p */
+                const unsigned new_skip_list = which_skiplist_by_size(new_entry->size);
+                for (unsigned i = 0; i <= new_skip_list; i++) {
+                    new_entry->next[i] = temp_entry.next[i];
+                }
+
+                /* For pointers up to the new entry's skip list,
+                 * point the previous block at the new entry
+                 */
+                for (unsigned i = 0; i <= new_skip_list; i++) {
+                    *(links.lists[i]) = new_entry;
+                }
+                /* For pointers from the new entry's skip list up to p's
+                 * skip list, point the previous block at what p pointed at
+                 */
+                for (unsigned i = (new_skip_list + 1); i <= skip_list; i++) {
+                    *(links.lists[i]) = temp_entry.next[i];
+                }
+                break;
+            }
+        }
+        p = p->next[skip_list];
+        for (unsigned i = 0; i < NUM_FREE_LISTS; i++) {
+            if (((uintptr_t)links.lists[i]) < ((uintptr_t)p)) {
+                /* Advance the links forward, but only if they don't pass p.
+                 * This is because the links will be used to update the next
+                 * pointers in the list once an entry is allocated, so we need
+                 * to stay behind p.
+                 */
+                struct free_entry *next_entry = *(links.lists[i]);
+                links.lists[i] = &next_entry->next[i];
+            }
+        }
+    }
+
+    /* If we didn't find a valid spot, ret will be NULL here */
+    return ret;
+}
+
+void *
+ker_calloc(const size_t size) {
+    void *p = ker_malloc(size);
+    if (!p) {
+        return p;
+    }
+
+    for (unsigned i = 0; i < size; i++) {
+        char *c = p;
+        c[i] = 0;
+    }
+    return p;
+}
+
+void *
+ker_realloc(const size_t old_size, const size_t new_size, void *const p) {
+}
+
+void
+ker_free(const size_t size, void *const p) {
+}
+
+/* Initializes structures required for allocator to work */
+void
+alloc_init(void) {
+    ALLOCABLE_MEM_SIZE = ((uintptr_t)&_DATA_RAM_START) + SRAM_SIZE - ((uintptr_t)&_ALLOCABLE_MEM);
+
+    struct free_entry *entry = ALLOCABLE_MEM_START;
+    entry->size = ALLOCABLE_MEM_SIZE;
+
+    for (unsigned i = 0; i < NUM_FREE_LISTS; i++) {
+        free_list_start.next[i] = ALLOCABLE_MEM_START;
+        entry->next[i] = NULL;
+    }
+}
 

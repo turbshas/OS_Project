@@ -67,6 +67,19 @@ SECTIONS
     } >SRAM0 AT> FLASH
     _DATA_SIZE = SIZEOF(.data);
 
+    .bss :
+    {
+        _BSS_START = .;
+        __bss_start__ = .;
+        *(.bss)
+        __bss_end__ = .;
+        _BSS_END = .;
+    } >SRAM0 AT> FLASH
+    _BSS_SIZE = SIZEOF(.bss);
+
+    _ALLOCABLE_MEM = .;
+
+    /*
     .heap :
     {
         __heap_start__ = .;
@@ -77,16 +90,7 @@ SECTIONS
         __HeapLimit = __heap_end__;
     } >SRAM0 AT> FLASH
     _HEAP_SIZE = SIZEOF(.heap);
-
-    .bss :
-    {
-        _BSS_START = .;
-        __bss_start__ = .;
-        *(.bss)
-        __bss_end__ = .;
-        _BSS_END = .;
-    } >SRAM0 AT> FLASH
-    _BSS_SIZE = SIZEOF(.bss);
+    */
 
     /DISCARD/ :
     {
