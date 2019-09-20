@@ -86,6 +86,8 @@ static struct free_entry free_list_start;
  *  - Start location of allocable memory will be communicated by the linker script
  *    (by communicating end of memory used in the OS binary) and size will be
  *    computed from this
+ * TODO: make sure allocated blocks are multiples of 4 B for alignment and also
+ * that freed pointers are aligned correctly (and realloc'd ones too)
  */
 
 //TODO: can do this with a lookup table?
@@ -99,6 +101,22 @@ which_skiplist_by_size(const size_t size) {
         return 1;
     } else {
         return 0;
+    }
+}
+
+static void
+advance_in_list(const unsigned skip_list, const struct free_entry **const p, struct list_links *const links) {
+    *p = (*p)->next[skip_list];
+    for (unsigned i = 0; i < NUM_FREE_LISTS; i++) {
+        if (*(links->lists[i]) < (*p)) {
+            /* Advance the links forward, but only if they don't pass p.
+             * This is because the links will be used to update the next
+             * pointers in the list once an entry is allocated, so we need
+             * to stay behind p.
+             */
+            struct free_entry *next_entry = *(links->lists[i]);
+            links->lists[i] = &next_entry->next[i];
+        }
     }
 }
 
@@ -168,18 +186,7 @@ ker_malloc(const size_t size) {
                 break;
             }
         }
-        p = p->next[skip_list];
-        for (unsigned i = 0; i < NUM_FREE_LISTS; i++) {
-            if (((uintptr_t)links.lists[i]) < ((uintptr_t)p)) {
-                /* Advance the links forward, but only if they don't pass p.
-                 * This is because the links will be used to update the next
-                 * pointers in the list once an entry is allocated, so we need
-                 * to stay behind p.
-                 */
-                struct free_entry *next_entry = *(links.lists[i]);
-                links.lists[i] = &next_entry->next[i];
-            }
-        }
+        advance_in_list(skip_list, (void *)&p, &links);
     }
 
     /* If we didn't find a valid spot, ret will be NULL here */
@@ -205,7 +212,107 @@ ker_realloc(const size_t old_size, const size_t new_size, void *const p) {
 }
 
 void
-ker_free(const size_t size, void *const p) {
+ker_free(const size_t size, struct free_entry *const p) {
+    const unsigned skip_list = which_skiplist_by_size(size);
+
+    /* Go through lowest skip list to make sure we don't skip our spot */
+    struct free_entry *traverse = free_list_start.next[0];
+    struct list_links links;
+    for (unsigned i = 0; i < NUM_FREE_LISTS; i++) {
+        links.lists[i] = &free_list_start.next[i];
+    }
+
+    while (traverse) {
+        if (p < traverse) {
+            /* Freed memory block belongs just before traverse */
+
+            /* Get pointer to block previous to p */
+            const uintptr_t prev_int = (uintptr_t)(links.lists[0]);
+            struct free_entry *prev = (void *)(prev_int - offsetof(struct free_entry, next));
+            if ((((uintptr_t)prev) + size) == (uintptr_t)p) {
+                /* Can coalesce freed block with previous block */
+                prev->size += size;
+                const unsigned prev_skip_list = which_skiplist_by_size(prev->size);
+
+                if ((((uintptr_t)p) + size) == (uintptr_t)traverse) {
+                    /* Can coalesce with next block */
+                    prev->size += traverse->size;
+                    const unsigned traverse_skip_list = which_skiplist_by_size(traverse->size);
+                    const unsigned new_skip_list = which_skiplist_by_size(prev->size);
+
+                    /* Update next pointers */
+                    for (unsigned i = 0; i <= traverse_skip_list; i++) {
+                        prev->next[i] = traverse->next[i];
+                    }
+
+                    for (unsigned i = (traverse_skip_list + 1); i <= new_skip_list; i++) {
+                        prev->next[i] = *(links.lists[i]);
+                    }
+
+                    /* Set previous entries to point to prev */
+                    for (unsigned i = (prev_skip_list + 1); i <= new_skip_list; i++) {
+                        *(links.lists[i]) = prev;
+                    }
+                } else {
+                    const unsigned new_skip_list = which_skiplist_by_size(prev->size);
+                    for (unsigned i = (prev_skip_list + 1); i <= new_skip_list; i++) {
+                        *(links.lists[i]) = prev;
+                    }
+                }
+            } else {
+                /* Can't coalesce, set values */
+                p->size = size;
+
+                if ((((uintptr_t)p) + size) == (uintptr_t)traverse) {
+                    /* Can coalesce with next block */
+                    p->size += traverse->size;
+                    const unsigned traverse_skip_list = which_skiplist_by_size(traverse->size);
+                    const unsigned new_skip_list = which_skiplist_by_size(p->size);
+
+                    /* Update next pointers */
+                    for (unsigned i = 0; i <= traverse_skip_list; i++) {
+                        p->next[i] = traverse->next[i];
+                    }
+
+                    for (unsigned i = (traverse_skip_list + 1); i <= new_skip_list; i++) {
+                        p->next[i] = *(links.lists[i]);
+                    }
+
+                    /* Set previous entries to point to p */
+                    for (unsigned i = 0; i <= new_skip_list; i++) {
+                        *(links.lists[i]) = p;
+                    }
+                } else {
+                    /* Can't coalesce with any blocks, insert new one */
+                    for (unsigned i = 0; i <= skip_list; i++) {
+                        p->next[i] = *(links.lists[i]);
+                        *(links.lists[i]) = p;
+                    }
+                }
+            }
+            break;
+        }
+        advance_in_list(0, (void *)&traverse, &links);
+    }
+
+    if (!traverse) {
+        /* We got to the end of the list, so this block must belong on the end */
+
+        /* Get pointer to block previous to p */
+        const uintptr_t prev_int = (uintptr_t)(*(links.lists[0]));
+        struct free_entry *prev = (void *)(prev_int - offsetof(struct free_entry, next));
+        if ((((uintptr_t)prev) + size) == (uintptr_t)p) {
+            /* Can coalesce with previous */
+            prev->size += size;
+        } else {
+            /* Need to create new block */
+            p->size = size;
+            for (unsigned i = 0; i <= skip_list; i++) {
+                p->next[i] = *(links.lists[i]);
+                *(links.lists[i]) = p;
+            }
+        }
+    }
 }
 
 /* Initializes structures required for allocator to work */

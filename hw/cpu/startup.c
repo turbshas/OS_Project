@@ -198,8 +198,13 @@ System_Init(void)
     sys_timer_init();
 }
 
+struct free_entry {
+    size_t size;
+    struct free_entry *next[4];
+};
 extern void alloc_init(void);
 extern void *ker_malloc(const size_t size);
+extern void ker_free(const size_t size, struct free_entry *const p);
 int
 main(void)
 {
@@ -218,6 +223,9 @@ main(void)
 
     alloc_init();
     void *p = ker_malloc(64);
+    void *p2 = ker_malloc(64);
+    ker_free(64, p);
+    ker_free(64, p2);
 
     for ( ;; ) {}
 
