@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "alloc.h"
 #include "drivers.h"
 #include "startup.h"
 #include "stm32_rcc.h"
@@ -198,13 +199,6 @@ System_Init(void)
     sys_timer_init();
 }
 
-struct free_entry {
-    size_t size;
-    struct free_entry *next[4];
-};
-extern void alloc_init(void);
-extern void *ker_malloc(const size_t size);
-extern void ker_free(const size_t size, struct free_entry *const p);
 int
 main(void)
 {
@@ -222,10 +216,10 @@ main(void)
     RTC_get_datetime(&dt);
 
     alloc_init();
-    void *p = ker_malloc(64);
-    void *p2 = ker_malloc(64);
-    ker_free(64, p);
-    ker_free(64, p2);
+    void *p = _malloc(64);
+    void *p2 = _malloc(64);
+    _free(p);
+    _free(p2);
 
     for ( ;; ) {}
 

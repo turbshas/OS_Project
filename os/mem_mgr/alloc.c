@@ -1,3 +1,4 @@
+#include "alloc.h"
 #include "mem_mgr.h"
 /*
  * For memoy allocation, a skip list will be used with 4 different free lists:
@@ -22,6 +23,12 @@
 #define SRAM_SIZE (128 * 1024)
 #define NUM_FREE_LISTS 4u
 #define MIN_ALLOC_SIZE 8u
+
+#define MALLOC_HEADER_SIZE (sizeof(size_t))
+#define ALIGNMENT (sizeof(size_t))
+#define ALIGNMENT_MASK (ALIGNMENT - 1u)
+#define UNALIGNED(p) (((uintptr_t)p) & ALIGNMENT_MASK)
+#define ROUND_UP_TO_ALIGN(size) ((((size) - 1u) & ~ALIGNMENT_MASK) + ALIGNMENT)
 
 extern unsigned int _ALLOCABLE_MEM;
 extern unsigned int _DATA_RAM_START;
@@ -81,6 +88,8 @@ static struct free_entry free_list_start;
  *  - For processes allocating memory, may need functions that allocate requested
  *    size + header size, and the header stores the size of the memory allocated
  *    for convenient freeing by process (free would only need the pointer)
+ *      - Allocates size + MALLOC_HEADER_SIZE, stores the allocated size in the 4 B
+ *        preceding the returned pointer
  *  - May need similar thing for realloc - inner function accepts old memory size
  *    as well as new memory size
  *  - Start location of allocable memory will be communicated by the linker script
@@ -120,12 +129,12 @@ advance_in_list(const unsigned skip_list, const struct free_entry **const p, str
     }
 }
 
-void *
+/*
+ * The ker_* functions expect proper input values, should only be called
+ * from the _* functions at the bottom of the file
+ */
+static void *
 ker_malloc(const size_t size) {
-    if (size == 0) {
-        return NULL;
-    }
-
     const unsigned skip_list = which_skiplist_by_size(size);
 
     struct free_entry *p = free_list_start.next[skip_list];
@@ -193,25 +202,7 @@ ker_malloc(const size_t size) {
     return ret;
 }
 
-void *
-ker_calloc(const size_t size) {
-    void *p = ker_malloc(size);
-    if (!p) {
-        return p;
-    }
-
-    for (unsigned i = 0; i < size; i++) {
-        char *c = p;
-        c[i] = 0;
-    }
-    return p;
-}
-
-void *
-ker_realloc(const size_t old_size, const size_t new_size, void *const p) {
-}
-
-void
+static void
 ker_free(const size_t size, struct free_entry *const p) {
     const unsigned skip_list = which_skiplist_by_size(size);
 
@@ -315,7 +306,84 @@ ker_free(const size_t size, struct free_entry *const p) {
     }
 }
 
+static void *
+ker_realloc(const size_t old_size, const size_t new_size, struct free_entry *const p) {
+    //TODO: can always shrink, just might have to create new block
+    // - what if leftover is less than minimum alloc amount? -> return p
+    // - maybe just always return p on a shrink?
+    const unsigned old_skip_list = which_skiplist_by_size(old_size);
+
+    struct free_entry *traverse = free_list_start.next[old_skip_list];
+    struct list_links links;
+    for (unsigned i = 0; i < NUM_FREE_LISTS; i++) {
+        links.lists[i] = &free_list_start.next[i];
+    }
+
+    void *ret = NULL;
+    while (traverse) {
+        if (p < traverse) {
+            /* Memory block belongs just before traverse */
+            if ((((uintptr_t)p) + old_size) == (uintptr_t)traverse) {
+                /* Following block is free and is adjacent to p, extend/shrink p */
+                if (old_size > new_size) {
+                    /* Shrinking p */
+                    const unsigned size_diff = old_size - new_size;
+                    const unsigned old_traverse_skip_list = which_skiplist_by_size(traverse->size);
+                    /* Copy values over using temp as intermediary */
+                    struct free_entry temp;
+                    temp.size = traverse->size + size_diff;
+                    for (unsigned i = 0; i <= old_traverse_skip_list; i++) {
+                        temp.next[i] = traverse->next[i];
+                    }
+                    struct free_entry *new_traverse = (void *)(((uintptr_t)traverse) - size_diff);
+                    new_traverse->size = temp.size;
+                    for (unsigned i = 0; i <= old_traverse_skip_list; i++) {
+                        new_traverse->next[i] = temp.next[i];
+                    }
+                    /* Update pointers that changed due to traverse expanding */
+                    const unsigned new_traverse_skip_list = which_skiplist_by_size(new_traverse->size);
+                    for (unsigned i = (old_traverse_skip_list + 1); i <= new_traverse_skip_list; i++) {
+                        new_traverse->next[i] = *(links.lists[i]);
+                        *(links.lists[i]) = new_traverse;
+                    }
+
+                    ret = p;
+                    break;
+                } else {
+                    /* Extending p */
+                    const unsigned size_diff = new_size - old_size;
+                    const unsigned old_traverse_skip_list = which_skiplist_by_size(traverse->size);
+                    /* Copy data into temp to avoid overlap */
+                    struct free_entry temp;
+                    temp.size = traverse->size - size_diff;
+                    for (unsigned i = 0; i <= old_traverse_skip_list; i++) {
+                        temp.next[i] = traverse->next[i];
+                    }
+                    const unsigned new_traverse_skip_list = which_skiplist_by_size(temp.size);
+                    struct free_entry *const new_traverse = (void *)(((uintptr_t)traverse) + size_diff);
+                    for (unsigned i = 0; i <= new_traverse_skip_list; i++) {
+                        new_traverse->next[i] = temp.next[i];
+                    }
+
+                    /* Update next pointers that changed due to traverse shrinking */
+                    for (unsigned i = (new_traverse_skip_list + 1); i <= old_traverse_skip_list; i++) {
+                        *(links.lists[i]) = temp.next[i];
+                    }
+
+                    ret = p;
+                    break;
+                }
+            }
+        }
+        advance_in_list(old_skip_list, (void *)&traverse, &links);
+    }
+
+    /* If we couldn't expand/shrink p, ret will be NULL */
+    return ret;
+}
+
 /* Initializes structures required for allocator to work */
+//TODO: this list will be used for heap allocations and will need memory to be allocated from mem_mgr before use
 void
 alloc_init(void) {
     ALLOCABLE_MEM_SIZE = ((uintptr_t)&_DATA_RAM_START) + SRAM_SIZE - ((uintptr_t)&_ALLOCABLE_MEM);
@@ -327,5 +395,123 @@ alloc_init(void) {
         free_list_start.next[i] = ALLOCABLE_MEM_START;
         entry->next[i] = NULL;
     }
+}
+
+void *
+_malloc(const size_t req_size) {
+    if (req_size == 0) {
+        return NULL;
+    }
+
+    const size_t size = ROUND_UP_TO_ALIGN(req_size) + MALLOC_HEADER_SIZE;
+
+    void *p = ker_malloc(size);
+    size_t *const q = p;
+    q[0] = size;
+    return (void *)&q[1];
+    /* The way I expect locking to work:
+     * 1) lock
+     * 2) ker_malloc()
+     * 3) unlock
+     * 4) If p == NULL:
+     *     a) allocate more memory to heap
+     *     b) lock
+     *     c) ker_free() on newly allocated memory
+     *     d) unlock
+     *     e) lock
+     *     f) ker_malloc()
+     *     g) unlock
+     *     h) if p == NULL return NULL else return p
+     * 5) Else return p
+     */
+}
+
+void *
+_calloc(const size_t req_size) {
+    if (req_size == 0) {
+        return NULL;
+    }
+
+    const size_t size = ROUND_UP_TO_ALIGN(req_size) + MALLOC_HEADER_SIZE;
+
+    void *p = ker_malloc(size);
+    if (!p) {
+        return p;
+    }
+
+    /* p is guaranteed to be a multiple of size_t bytes */
+    const size_t count = size / ALIGNMENT;
+    for (unsigned i = 0; i < count; i++) {
+        size_t *c = p;
+        c[i] = 0;
+    }
+    size_t *const q = p;
+    q[0] = size;
+    return (void *)&q[1];
+}
+
+void
+_free(void *const p) {
+    if (UNALIGNED(p) || !p) {
+        /* Just do nothing... not sure what the "right" thing is */
+        return;
+    }
+    const size_t *const q = p;
+    const size_t size = q[-1];
+
+    ker_free(size, (void *)&q[-1]);
+}
+
+void *
+_realloc(const size_t req_size, void *const p) {
+    if (!p) {
+        return _malloc(req_size);
+    } else if (req_size == 0) {
+        /* p is a valid pointer and requested size is zero: free block of memory */
+        _free(p);
+        return NULL;
+    } else if (UNALIGNED(p)) {
+        /* Just do nothing... not sure what the "right" thing is */
+        return p;
+    }
+
+    const size_t *const q = p;
+    const size_t old_size = q[-1];
+    const size_t new_size = ROUND_UP_TO_ALIGN(req_size) + MALLOC_HEADER_SIZE;
+    if (new_size == old_size) {
+        /* Same size requested, do nothing */
+        return p;
+    }
+    /* Actual realloc */
+    void *ret = ker_realloc(old_size, new_size, p);
+    if (!ret) {
+        /* Need to allocate new block */
+        ret = ker_malloc(new_size);
+        if (!ret) {
+            /* Couldn't allocate more mem */
+            return NULL;
+        }
+
+        /* Copy data over */
+        size_t count;
+        size_t *const r = ret;
+        if (new_size < old_size)  {
+            count = new_size / ALIGNMENT;
+        } else {
+            count = old_size / ALIGNMENT;
+        }
+        /* First slot is for storing size of block allocated */
+        r[0] = new_size;
+        for (size_t i = 0; i < count; i++) {
+            r[i] = q[i - 1];
+        }
+
+        /* Free old mem */
+        ker_free(old_size, (void *)&q[-1]);
+
+        return &r[1];
+    }
+
+    return ret;
 }
 
