@@ -14,6 +14,7 @@ struct process;
 
 struct thread {
     uint32_t thread_id;
+    uint32_t state; //TODO: figure out state machine
     struct process *owner_process;
     struct thread *next;
     struct cpu_regs_on_stack *regs;

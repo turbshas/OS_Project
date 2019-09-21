@@ -48,12 +48,28 @@ pwr_driver:
 mem_mgr:
  - Handle dynamic allocation
  - Skiplist
+ - In alloc.c, should allocate pool of memory from mem_mgr and use that for the skiplist
+ - Handle large allocations e.g. for process creations
+ - Handle MPU regions I guess?
 
 flash_mgr:
  - Handle dynamic allocation of flash memory
 
 process_mgr:
  - No idea yet
+ - Process creation, deletion, modification
+ - Thread creation, deletion, modification
+ - mutexes probably? might put that somewhere else
+
+path_mgr:
+ - Binding to paths, writing files, etc
+ - Maybe don't need?
+
+system calls:
+ - SVCallHandler needs to read immediate from PC and call necessary kernel function
+
+std C lib:
+ - all of it lol
 
 OS/kernel init:
  - Will probably find out once I start implementing it
