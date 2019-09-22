@@ -17,6 +17,9 @@
 #define CALIB_SKEW      (1u << 30)
 #define CALIB_TENMS     0x00ffffff
 
+#define SET_PENDSV() do { SYS_CTL->ICSR |= ICSR_PENDSVSET; } while(0)
+#define CLEAR_PENDSV() do { SYS_CTL->ICSR |= ICSR_PENDSVCLR; } while(0)
+
 struct sys_timer_regs {
     uint32_t CSR;
     uint32_t RVR;
@@ -65,16 +68,6 @@ enable_sys_tick(void)
     SYST->CSR |= CSR_TICKINT;
 }
 
-static void
-set_pendSV(void) {
-    SYS_CTL->ICSR |= ICSR_PENDSVSET;
-}
-
-static void
-clear_pendSV(void) {
-    SYS_CTL->ICSR |= ICSR_PENDSVCLR;
-}
-
 struct cpu_regs_on_stack {
     uint32_t R4_11[8];
     uint32_t R0_3[4];
@@ -113,8 +106,10 @@ thread_2(void)
 
 __attribute__((naked))
 void
-SVCall_Handler(void)
+PendSV_Handler(void)
 {
+    CLEAR_PENDSV();
+
     register void *val asm("r1");
     val = &active_stack;
 
@@ -169,7 +164,7 @@ ctx_switcher(void)
         thread_sp[2]->PC = (uint32_t)thread_1;
     }
     enable_sys_tick();
-    asm volatile ("SVC #1");
+    SET_PENDSV();
 }
 
 __attribute__((naked, interrupt))

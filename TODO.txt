@@ -65,8 +65,13 @@ path_mgr:
  - Binding to paths, writing files, etc
  - Maybe don't need?
 
+rsrc_mgr:
+ - Managing hardware resources (ADC, USB, GPIO, CRC, etc.)
+
 system calls:
  - SVCallHandler needs to read immediate from PC and call necessary kernel function
+ - Move context switcher into scheduler code
+ - Abstract interrupt handler names? need to separate OS from HAL
 
 std C lib:
  - all of it lol
