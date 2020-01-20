@@ -53,7 +53,7 @@ $(LINKER_SCRIPT): startup.ld
 	@mkdir -p $(dir $@)
 	@$(CC) -E -x c $< | grep -v "^#" > $@
 
-build/startup.elf: $(LINKER_SCRIPT) $(OBJ_FILES)
+$(ELF): $(LINKER_SCRIPT) $(OBJ_FILES)
 	@echo "    LD    $(notdir $@)"
 	@mkdir -p $(dir $@)
 	@$(CC) $(LINKER_FLAGS) $(OBJ_FILES) -o $@
