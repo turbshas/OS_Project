@@ -1,3 +1,49 @@
+#include "stm32_dma.h"
+
+#include "debug_stuff.h"
+
+#define DMA_SxCR_CHSEL_SHIFT    25u
+#define DMA_SxCR_MBURST_SHIFT   23u
+#define DMA_SxCR_PBURST_SHIFT   21u
+#define DMA_SxCR_PL_SHIFT       16u
+#define DMA_SxCR_MSIZE_SHIFT    13u
+#define DMA_SxCR_PSIZE_SHIFT    11u
+#define DMA_SxCR_DIR_SHIFT      6u
+
+#define DMA_SxCR_CHSEL      (7u << DMA_SxCR_CHSEL_SHIFT)
+#define DMA_SxCR_MBURST     (3u << DMA_SxCR_MBURST_SHIFT)
+#define DMA_SxCR_PBURST     (3u << DMA_SxCR_PBURST_SHIFT)
+#define DMA_SxCR_CT         (1u << 19)
+#define DMA_SxCR_DBM        (1u << 18)
+#define DMA_SxCR_PL         (3u << DMA_SxCR_PL_SHIFT)
+#define DMA_SxCR_PINCOS     (1u << 15)
+#define DMA_SxCR_MSIZE      (3u << DMA_SxCR_MSIZE_SHIFT)
+#define DMA_SxCR_PSIZE      (3u << DMA_SxCR_PSIZE_SHIFT)
+#define DMA_SxCR_MINC       (1u << 10)
+#define DMA_SxCR_PINC       (1u << 9)
+#define DMA_SxCR_CIRC       (1u << 8)
+#define DMA_SxCR_DIR        (3u << DMA_SxCR_DIR_SHIFT)
+#define DMA_SxCR_PFCTRL     (1u << 5)
+#define DMA_SxCR_TCIE       (1u << 4)
+#define DMA_SxCR_HTIE       (1u << 3)
+#define DMA_SxCR_TEIE       (1u << 2)
+#define DMA_SxCR_DMEIE      (1u << 1)
+#define DMA_SxCR_EN         (1u << 0)
+#define DMA_SxCR_ALL        0xfefffff
+
+#define DMA_SxFCR_FS_SHIFT  3u
+#define DMA_SxFCR_FTH_SHIFT 0
+
+#define DMA_SxFCR_FEIE      (1u << 7)
+#define DMA_SxFCR_FS        (7u << DMA_SxFCR_FS_SHIFT)
+#define DMA_SxFCR_DMDIS     (1u << 2)
+#define DMA_SxFCR_FTH       (3u << DMA_SxFCR_FTH_SHIFT)
+#define DMA_SxFCR_ALL       0xbf
+
+#define DMA_DIR_P2M 0
+#define DMA_DIR_M2P 1u
+#define DMA_DIR_M2M 2u
+
 /*
  * Things to consider:
  *  - Periph to Mem
@@ -29,23 +75,19 @@
  *  - Maybe reserve some streams by default for peripherals with preloaded config where a similar config is used often
  *  - Allow configurable interrupts (setup each of the DMA interrupt to call a user-configurable interrupt)
  */
-#include "stm32_dma.h"
-
-#include "debug_stuff.h"
-
 #define DMA1_BASE           (PERIPH_BASE + 0x26000)
 #define DMA2_BASE           (PERIPH_BASE + 0x26400)
 #ifdef __STM32F4xx__
 #define DMA2D_BASE          (PERIPH_BASE + 0x2b000)
 #endif
 
-DMA_periph *const DMA1 = reinterpret_cast<DMA_periph *>(DMA1_BASE);
-DMA_periph *const DMA2 = reinterpret_cast<DMA_periph *>(DMA2_BASE);
+volatile DmaPeriph *const DMA1 = reinterpret_cast<volatile DmaPeriph *>(DMA1_BASE);
+volatile DmaPeriph *const DMA2 = reinterpret_cast<volatile DmaPeriph *>(DMA2_BASE);
 #ifdef __STM32F4xx__
-DMA_periph *const DMA2D = reinterpret_cast<DMA_periph *>(DMA2D_BASE);
+volatile DmaPeriph *const DMA2D = reinterpret_cast<volatile DmaPeriph *>(DMA2D_BASE);
 #endif
 
-dma_request::dma_request()
+DmaRequest::DmaRequest()
 {
     mem1 = nullptr;
     mem2 = nullptr;
@@ -66,7 +108,7 @@ dma_request::dma_request()
 }
 
 void
-dma_request::check_dma_req()
+DmaRequest::check_dma_req() const
 {
     /* Make sure memory used is valid */
     const uintptr_t mem1_int = reinterpret_cast<const uintptr_t>(mem1);
@@ -218,7 +260,7 @@ dma_request::check_dma_req()
  * Reads a dma request and formats it to fit into the stream registers
  */
 void
-DMA_periph::read_dma_request(struct dma_stream_regs &dest, const struct dma_request &req)
+DmaPeriph::read_dma_request(struct dma_stream_regs &dest, const DmaRequest &req) volatile
 {
     dest.CR = (streams[req.stream].CR & (~DMA_SxCR_ALL));
     dest.CR |= req.priority << DMA_SxCR_PL_SHIFT;
@@ -235,28 +277,28 @@ DMA_periph::read_dma_request(struct dma_stream_regs &dest, const struct dma_requ
     if (req.mem_inc) {
         dest.CR |= DMA_SxCR_MINC;
     }
-    if (req.mode & dma_request::MODE_CURR_TARGET) {
+    if (req.mode & DmaRequest::MODE_CURR_TARGET) {
         dest.CR |= DMA_SxCR_CT;
     }
-    if (req.mode & dma_request::MODE_DOUBLE_BUFF) {
+    if (req.mode & DmaRequest::MODE_DOUBLE_BUFF) {
         dest.CR |= DMA_SxCR_DBM;
     }
-    if (req.mode & dma_request::MODE_CIRC) {
+    if (req.mode & DmaRequest::MODE_CIRC) {
         dest.CR |= DMA_SxCR_CIRC;
     }
-    if (req.mode & dma_request::MODE_PERIPH_FLOW_CTRL) {
+    if (req.mode & DmaRequest::MODE_PERIPH_FLOW_CTRL) {
         dest.CR |= DMA_SxCR_PFCTRL;
     }
 
     dest.FCR = (streams[req.stream].FCR & (~DMA_SxFCR_ALL));
-    if (req.mode & dma_request::MODE_FIFO) {
+    if (req.mode & DmaRequest::MODE_FIFO) {
         dest.FCR |= DMA_SxFCR_DMDIS;
     }
     dest.FCR |= req.fifo_threshold << DMA_SxFCR_FTH_SHIFT;
 }
 
 void
-DMA_periph::set_config(const uint8_t stream, const struct dma_stream_regs &stream_cfg)
+DmaPeriph::set_config(const uint8_t stream, const struct dma_stream_regs &stream_cfg) volatile
 {
     /* Disable DMA stream so we can modify the registers */
     streams[stream].CR &= ~DMA_SxCR_EN;
@@ -273,7 +315,7 @@ DMA_periph::set_config(const uint8_t stream, const struct dma_stream_regs &strea
 }
 
 int
-DMA_periph::periph_to_mem(const struct dma_request &req)
+DmaPeriph::periph_to_mem(const DmaRequest &req) volatile
 {
     const void *const mem = req.mem1;
     const volatile void *const periph = req.periph;
@@ -288,9 +330,9 @@ DMA_periph::periph_to_mem(const struct dma_request &req)
 
     uint8_t psize = 0;
     switch (req.periph_xfer_size) {
-    case dma_request::XFER_SIZE_BYTE: psize = 1; break;
-    case dma_request::XFER_SIZE_HWORD: psize = 2; break;
-    case dma_request::XFER_SIZE_WORD: psize = 4; break;
+    case DmaRequest::XFER_SIZE_BYTE: psize = 1; break;
+    case DmaRequest::XFER_SIZE_HWORD: psize = 2; break;
+    case DmaRequest::XFER_SIZE_WORD: psize = 4; break;
     default: break;
     }
     stream_cfg.NDTR = len / psize;
@@ -304,7 +346,7 @@ DMA_periph::periph_to_mem(const struct dma_request &req)
 }
 
 int
-DMA_periph::mem_to_periph(const struct dma_request &req)
+DmaPeriph::mem_to_periph(const DmaRequest &req) volatile
 {
     const void *const mem = req.mem1;
     const volatile void *const periph = req.periph;
@@ -319,9 +361,9 @@ DMA_periph::mem_to_periph(const struct dma_request &req)
 
     uint8_t psize = 0;
     switch (req.periph_xfer_size) {
-    case dma_request::XFER_SIZE_BYTE: psize = 1; break;
-    case dma_request::XFER_SIZE_HWORD: psize = 2; break;
-    case dma_request::XFER_SIZE_WORD: psize = 4; break;
+    case DmaRequest::XFER_SIZE_BYTE: psize = 1; break;
+    case DmaRequest::XFER_SIZE_HWORD: psize = 2; break;
+    case DmaRequest::XFER_SIZE_WORD: psize = 4; break;
     default: break;
     }
     stream_cfg.NDTR = len / psize;
@@ -336,7 +378,7 @@ DMA_periph::mem_to_periph(const struct dma_request &req)
 }
 
 int
-DMA_periph::mem_to_mem(const struct dma_request &req)
+DmaPeriph::mem_to_mem(const DmaRequest &req) volatile
 {
     const void *const mem1 = req.mem1;
     const void *const mem2 = req.mem2;
@@ -351,9 +393,9 @@ DMA_periph::mem_to_mem(const struct dma_request &req)
 
     uint8_t psize = 0;
     switch (req.periph_xfer_size) {
-    case dma_request::XFER_SIZE_BYTE: psize = 1; break;
-    case dma_request::XFER_SIZE_HWORD: psize = 2; break;
-    case dma_request::XFER_SIZE_WORD: psize = 4; break;
+    case DmaRequest::XFER_SIZE_BYTE: psize = 1; break;
+    case DmaRequest::XFER_SIZE_HWORD: psize = 2; break;
+    case DmaRequest::XFER_SIZE_WORD: psize = 4; break;
     default: break;
     }
     stream_cfg.NDTR = len / psize;

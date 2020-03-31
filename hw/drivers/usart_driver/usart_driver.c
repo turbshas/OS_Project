@@ -20,22 +20,13 @@ usart_send_string(usart_t usart, const char *const str, const uint8_t len)
 
     usart_enable(usart);
 
-    struct dma_request dma_req;
+    DmaRequest dma_req;
     dma_req.mem1 = static_cast<const void *>(str);
     dma_req.periph = &usart->DR;
     dma_req.len = len;
 
-    dma_req.stream = 0,
-    dma_req.priority = DMA_PRIO_LOW,
-    dma_req.periph_xfer_size = DMA_XFERSIZE_BYTE,
-    dma_req.mem_xfer_size = DMA_XFERSIZE_BYTE,
-    dma_req.periph_burst = DMA_BURST_NONE,
-    dma_req.mem_burst = DMA_BURST_NONE,
-    dma_req.periph_inc = DMA_INC_DISABLE,
-    dma_req.periph_inc_offset = DMA_PERIPH_INC_OFFSET_PSIZE,
-    dma_req.mem_inc = DMA_INC_ENABLE,
-    dma_req.mode = DMA_MODE_DIRECT,
-    dma_req.fifo_threshold = DMA_FIFO_THRESH_1QUARTER,
+    dma_req.stream = 0;
+    dma_req.priority = DmaRequest::PRIO_LOW;
 
     DMA1->mem_to_periph(dma_req);
 #if 0

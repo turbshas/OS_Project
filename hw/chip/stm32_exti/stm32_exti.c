@@ -11,88 +11,100 @@
         } \
     } while (0)
 
-static volatile struct exti_regs *const EXTI = (void *)EXTI_BASE;
+volatile ExtiPeriph *const EXTI = reinterpret_cast<volatile ExtiPeriph *>(EXTI_BASE);
 
-int exti_mask_interrupt(const uint32_t interrupt_num)
+int
+ExtiPeriph::mask_interrupt(const uint32_t interrupt_num) volatile
 {
     CHECK_VALID_INTERRUPT(interrupt_num);
-    EXTI->IMR &= ~(1u << interrupt_num);
+    IMR &= ~(1u << interrupt_num);
     return 0;
 }
 
-int exti_unmask_interrupt(const uint32_t interrupt_num)
+int
+ExtiPeriph::unmask_interrupt(const uint32_t interrupt_num) volatile
 {
     CHECK_VALID_INTERRUPT(interrupt_num);
-    EXTI->IMR |= (1u << interrupt_num);
+    IMR |= (1u << interrupt_num);
     return 0;
 }
 
-int exti_mask_event(const uint32_t interrupt_num)
+int
+ExtiPeriph::mask_event(const uint32_t interrupt_num) volatile
 {
     CHECK_VALID_INTERRUPT(interrupt_num);
-    EXTI->EMR &= ~(1u << interrupt_num);
+    EMR &= ~(1u << interrupt_num);
     return 0;
 }
 
-int exti_unmask_event(const uint32_t interrupt_num)
+int
+ExtiPeriph::unmask_event(const uint32_t interrupt_num) volatile
 {
     CHECK_VALID_INTERRUPT(interrupt_num);
-    EXTI->EMR |= (1u << interrupt_num);
+    EMR |= (1u << interrupt_num);
     return 0;
 }
 
-int exti_set_rising_trigger(const uint32_t interrupt_num)
+int
+ExtiPeriph::set_rising_trigger(const uint32_t interrupt_num) volatile
 {
     CHECK_VALID_INTERRUPT(interrupt_num);
-    EXTI->RTSR |= (1u << interrupt_num);
+    RTSR |= (1u << interrupt_num);
     return 0;
 }
 
-int exti_clear_rising_trigger(const uint32_t interrupt_num)
+int
+ExtiPeriph::clear_rising_trigger(const uint32_t interrupt_num) volatile
 {
     CHECK_VALID_INTERRUPT(interrupt_num);
-    EXTI->RTSR &= ~(1u << interrupt_num);
+    RTSR &= ~(1u << interrupt_num);
     return 0;
 }
 
-int exti_set_falling_trigger(const uint32_t interrupt_num)
+int
+ExtiPeriph::set_falling_trigger(const uint32_t interrupt_num) volatile
 {
     CHECK_VALID_INTERRUPT(interrupt_num);
-    EXTI->FTSR |= (1u << interrupt_num);
+    FTSR |= (1u << interrupt_num);
     return 0;
 }
 
-int exti_clear_falling_trigger(const uint32_t interrupt_num)
+int
+ExtiPeriph::clear_falling_trigger(const uint32_t interrupt_num) volatile
 {
     CHECK_VALID_INTERRUPT(interrupt_num);
-    EXTI->FTSR &= ~(1u << interrupt_num);
+    FTSR &= ~(1u << interrupt_num);
     return 0;
 }
 
-int exti_set_swi(const uint32_t interrupt_num)
+int
+ExtiPeriph::set_swi(const uint32_t interrupt_num) volatile
 {
     CHECK_VALID_INTERRUPT(interrupt_num);
-    EXTI->SWIER |= (1u << interrupt_num);
+    SWIER |= (1u << interrupt_num);
     return 0;
 }
 
-int exti_clear_swi(const uint32_t interrupt_num)
+int
+ExtiPeriph::clear_swi(const uint32_t interrupt_num) volatile
 {
     CHECK_VALID_INTERRUPT(interrupt_num);
-    EXTI->SWIER &= ~(1u << interrupt_num);
+    SWIER &= ~(1u << interrupt_num);
     return 0;
 }
 
-int exti_get_pending(const uint32_t interrupt_num)
+int
+ExtiPeriph::get_pending(const uint32_t interrupt_num) volatile
 {
     CHECK_VALID_INTERRUPT(interrupt_num);
-    return (EXTI->PR & (1u << interrupt_num));
+    return (PR & (1u << interrupt_num));
 }
 
-int exti_clear_pending(const uint32_t interrupt_num)
+int
+ExtiPeriph::clear_pending(const uint32_t interrupt_num) volatile
 {
     CHECK_VALID_INTERRUPT(interrupt_num);
-    EXTI->PR |= (1u << interrupt_num);
+    PR |= (1u << interrupt_num);
     return 0;
 }
 

@@ -13,32 +13,35 @@
  * EXTI21 is connected to RTC Tamper and Timestamp events
  * EXTI22 is connected to RTC Wakeup
  */
-struct exti_regs {
+class ExtiPeriph {
     uint32_t IMR;
     uint32_t EMR;
     uint32_t RTSR;
     uint32_t FTSR;
     uint32_t SWIER;
     uint32_t PR;
+
+    public:
+        int mask_interrupt(const uint32_t interrupt_num) volatile;
+        int unmask_interrupt(const uint32_t interrupt_num) volatile;
+
+        int mask_event(const uint32_t interrupt_num) volatile;
+        int unmask_event(const uint32_t interrupt_num) volatile;
+
+        int set_rising_trigger(const uint32_t interrupt_num) volatile;
+        int clear_rising_trigger(const uint32_t interrupt_num) volatile;
+
+        int set_falling_trigger(const uint32_t interrupt_num) volatile;
+        int clear_falling_trigger(const uint32_t interrupt_num) volatile;
+
+        int set_swi(const uint32_t interrupt_num) volatile;
+        int clear_swi(const uint32_t interrupt_num) volatile;
+
+        int get_pending(const uint32_t interrupt_num) volatile;
+        int clear_pending(const uint32_t interrupt_num) volatile;
 };
 
-int exti_mask_interrupt(const uint32_t interrupt_num);
-int exti_unmask_interrupt(const uint32_t interrupt_num);
-
-int exti_mask_event(const uint32_t interrupt_num);
-int exti_unmask_event(const uint32_t interrupt_num);
-
-int exti_set_rising_trigger(const uint32_t interrupt_num);
-int exti_clear_rising_trigger(const uint32_t interrupt_num);
-
-int exti_set_falling_trigger(const uint32_t interrupt_num);
-int exti_clear_falling_trigger(const uint32_t interrupt_num);
-
-int exti_set_swi(const uint32_t interrupt_num);
-int exti_clear_swi(const uint32_t interrupt_num);
-
-int exti_get_pending(const uint32_t interrupt_num);
-int exti_clear_pending(const uint32_t interrupt_num);
+extern volatile ExtiPeriph *const EXTI;
 
 #endif /* _EXTI_H */
 
