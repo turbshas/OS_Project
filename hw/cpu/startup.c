@@ -9,7 +9,8 @@
 #include "stm32_rtc.h"
 #include "sys_timer.h"
 
-#define _INITIAL_SP (&main_stack[63])//((void *)0x20020000) /* Will have to find a better place for this */
+// #define _INITIAL_SP (&main_stack[63])
+#define _INITIAL_SP ((void *)0x20020000) /* Will have to find a better place for this */
 #define I2C1_LOC ((void *)0x40005400)
 
 __attribute__((interrupt("IRQ")))
@@ -199,7 +200,7 @@ System_Init(void)
     sys_timer_init();
 }
 
-int
+__attribute__((noreturn)) int
 main(void)
 {
     System_Init();
@@ -222,6 +223,4 @@ main(void)
     _free(p2);
 
     for ( ;; ) {}
-
-    return 0;
 }

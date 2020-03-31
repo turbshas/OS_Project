@@ -17,7 +17,8 @@ include $(patsubst %,%/Makefile, $(MODULES))
 OBJ_FILES := $(patsubst %.c,build/%.o,$(SRC_FILES))
 DEP_FILES := $(OBJ_FILES:.o=.dep)
 
-CC := arm-none-eabi-gcc
+# CC := arm-none-eabi-gcc
+CC := arm-none-eabi-g++
 OBJCOPY := arm-none-eabi-objcopy
 
 LINKER_SCRIPT := build/startup.ld.preproc
@@ -43,25 +44,28 @@ all: $(BINARY)
 # Get make to recompile when header files are changed
 -include $(DEP_FILES)
 
+# Comment out the line below to print commands used when building
+HIDE_OUTPUT := @
+
 build/%.o: %.c
 	@echo "    CC    $<"
-	@mkdir -p $(dir $@)
-	@$(CC) -c -MMD $(COMPILE_FLAGS) $(INCLUDES) $< -o $@
+	$(HIDE_OUTPUT)mkdir -p $(dir $@)
+	$(HIDE_OUTPUT)$(CC) -c -MMD $(COMPILE_FLAGS) $(INCLUDES) $< -o $@
 
 $(LINKER_SCRIPT): startup.ld
 	@echo "    GEN   $(notdir $@)"
-	@mkdir -p $(dir $@)
-	@$(CC) -E -x c $< | grep -v "^#" > $@
+	$(HIDE_OUTPUT)mkdir -p $(dir $@)
+	$(HIDE_OUTPUT)$(CC) -E -x c $< | grep -v "^#" > $@
 
 $(ELF): $(LINKER_SCRIPT) $(OBJ_FILES)
 	@echo "    LD    $(notdir $@)"
-	@mkdir -p $(dir $@)
-	@$(CC) $(LINKER_FLAGS) $(OBJ_FILES) -o $@
+	$(HIDE_OUTPUT)mkdir -p $(dir $@)
+	$(HIDE_OUTPUT)$(CC) $(LINKER_FLAGS) $(OBJ_FILES) -o $@
 
 $(BINARY): $(ELF)
 	@echo "    BIN   $(notdir $@)"
-	@mkdir -p $(dir $@)
-	@$(OBJCOPY) -O binary $< $@
+	$(HIDE_OUTPUT)mkdir -p $(dir $@)
+	$(HIDE_OUTPUT)$(OBJCOPY) -O binary $< $@
 
 # Rules for running and debugging
 QEMU := qemu-pebble
@@ -75,7 +79,7 @@ debug: $(ELF) $(BINARY)
 	$(GDB) -tui --eval-command="target remote localhost:$(GDB_PORT)" $<
 
 clean:
-	@rm -rf build
+	$(HIDE_OUTPUT)rm -rf build
 
 .PHONY: all default run debug clean
 

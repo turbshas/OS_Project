@@ -25,7 +25,9 @@ SECTIONS
         *(.fini)
     } >FLASH
 
-    .ARM.extab : { *(.ARM.extab* .gnu.linkonce.armextab.*) }
+    .ARM.extab : {
+        *(.ARM.extab* .gnu.linkonce.armextab.*)
+    } >FLASH
     .ARM : {
         __exidx_start = .;
         *(.ARM.exidx*)
@@ -79,18 +81,17 @@ SECTIONS
 
     _ALLOCABLE_MEM = .;
 
-    /*
     .heap :
     {
         __heap_start__ = .;
         end = __heap_start__;
         _end = end;
+        __end = end;
         KEEP(*(.heap))
         __heap_end__ = .;
         __HeapLimit = __heap_end__;
     } >SRAM0 AT> FLASH
     _HEAP_SIZE = SIZEOF(.heap);
-    */
 
     /DISCARD/ :
     {

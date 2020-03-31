@@ -48,28 +48,14 @@
 #define DMA_DIR_M2P 1u
 #define DMA_DIR_M2M 2u
 
-struct dma_stream_regs {
-    uint32_t CR;
-    uint32_t NDTR;
-    uint32_t PAR;
-    uint32_t M0AR;
-    uint32_t M1AR;
-    uint32_t FCR;
-};
-
-struct DMA_Regs {
-    uint32_t LISR;
-    uint32_t HISR;
-    uint32_t LIFCR;
-    uint32_t HIFCR;
-    struct dma_stream_regs stream[DMA_NUM_STREAMS];
-};
-
-typedef volatile struct DMA_Regs dma_t;
-
 /* Size of FIFO: 4 words/16 bytes */
 /*
  * Data struct for parameters of the DMA request.
+ *
+ * mem1: Memory address 1 for DMA operation, memory address used for mem<->periph transfers.
+ * mem2: Memory address 2, only used for mem<->mem transfers.
+ * periph: Address of peripheral for DMA operation, used for mem<->periph transfers.
+ * len: Length of data to transfer, in bytes.
  *
  * stream: Which stream to use: 0 to 7
  * priority: Priority of the request: low, med, high, or very high
@@ -96,6 +82,12 @@ typedef volatile struct DMA_Regs dma_t;
  * fifo_threshold: When in FIFO mode, at what point to transfer from the FIFO to the target: 1/4 full, 1/2 full, 3/4 full, or completely full
  */
 struct dma_request {
+    enum priority_level { PRIO_LOW = 0, PRIO_MED, PRIO_HIGH, PRIO_VHIGH, NUM_PRIOS };
+    enum transfer_size { XFER_SIZE_BYTE = 0, XFER_SIZE_HWORD, XFER_SIZE_WORD, NUM_XFER_SIZES };
+    enum burst_type { BURST_NONE = 0, BURST_INCR4, BURST_INCR8, BURST_INCR16, NUM_BURST_TYPES };
+    enum periph_incr_mode { PERIPH_INCR_PSIZE = 0, PERIPH_INCR_FIXED, NUM_INCR_MODES };
+    enum dma_mode { MODE_DIRECT = 0, MODE_PERIPH_FLOW_CTRL = 1, MODE_CIRC = 2, MODE_DOUBLE_BUFF = 4, MODE_CURR_TARGET = 8, MODE_FIFO = 16 };
+    enum fifo_threshold_amt { FIFO_THRESH_1QUARTER = 0, FIFO_THRESH_HALF, FIFO_THRESH_3QUARTER, FIFO_THRESH_FULL, NUM_FIFO_THRESH };
     /* These are interrupt handlers, might find a better way to support this
     void (*xfer_complete)(void);
     void (*half_xfer_complete)(void);
@@ -103,60 +95,57 @@ struct dma_request {
     void (*direct_mode_error)(void);
     void (*fifo_mode_error)(void);
     */
+    const void *mem1;
+    const void *mem2;
+    const volatile void *periph;
+    uint32_t len;
     uint8_t stream;
-    uint8_t priority;
-    uint8_t periph_xfer_size;
-    uint8_t mem_xfer_size;
-    uint8_t periph_burst;
-    uint8_t mem_burst;
-    uint8_t periph_inc;
-    uint8_t periph_inc_offset;
-    uint8_t mem_inc;
-    uint8_t mode; /* CT, DBM, CIRC, and PFCTRL, FIFO or direct mode */
-    uint8_t fifo_threshold;
+    enum priority_level priority;
+    enum transfer_size periph_xfer_size;
+    enum transfer_size mem_xfer_size;
+    enum burst_type periph_burst;
+    enum burst_type mem_burst;
+    bool periph_inc;
+    enum periph_incr_mode periph_inc_offset;
+    bool mem_inc;
+    enum dma_mode mode; /* CT, DBM, CIRC, and PFCTRL, FIFO or direct mode */
+    enum fifo_threshold_amt fifo_threshold;
+
+    public:
+        dma_request();
+        void check_dma_req() const;
 };
 
-#define DMA_PRIO_LOW     0
-#define DMA_PRIO_MED     1u
-#define DMA_PRIO_HIGH    2u
-#define DMA_PRIO_VHIGH   3u
+class DMA_periph {
+    uint32_t LISR;
+    uint32_t HISR;
+    uint32_t LIFCR;
+    uint32_t HIFCR;
+    struct dma_stream_regs {
+        uint32_t CR;
+        uint32_t NDTR;
+        uint32_t PAR;
+        uint32_t M0AR;
+        uint32_t M1AR;
+        uint32_t FCR;
+    } streams[DMA_NUM_STREAMS];
 
-#define DMA_XFERSIZE_BYTE  0
-#define DMA_XFERSIZE_HWORD 1u
-#define DMA_XFERSIZE_WORD  2u
+    private:
+        void read_dma_request(struct dma_stream_regs &dest, const struct dma_request &req);
+        void set_config(const uint8_t stream, const struct dma_stream_regs &stream_cfg);
 
-#define DMA_BURST_NONE   0
-#define DMA_BURST_INCR4  1u
-#define DMA_BURST_INCR8  2u
-#define DMA_BURST_INCR16 3u
+    public:
+        int periph_to_mem(const struct dma_request &req);
+        int mem_to_periph(const struct dma_request &req);
+        int mem_to_mem(const struct dma_request &req);
+};
 
-#define DMA_INC_DISABLE 0
-#define DMA_INC_ENABLE 1u
-#define DMA_PERIPH_INC_OFFSET_PSIZE 0
-#define DMA_PERIPH_INC_OFFSET_FIXED 1u
-
-#define DMA_MODE_FIFO             (1u << 4)
-#define DMA_MODE_CURR_TARGET      (1u << 3)
-#define DMA_MODE_DOUBLE_BUFF      (1u << 2)
-#define DMA_MODE_CIRC_MODE        (1u << 1)
-#define DMA_MODE_PERIPH_FLOW_CTRL (1u << 0)
-#define DMA_MODE_DIRECT           0u
-
-#define DMA_FIFO_THRESH_1QUARTER 0
-#define DMA_FIFO_THRESH_HALF     1
-#define DMA_FIFO_THRESH_3QUARTER 2
-#define DMA_FIFO_THRESH_FULL     3
-
-extern dma_t *const DMA1;
-extern dma_t *const DMA2;
+extern DMA_periph *const DMA1;
+extern DMA_periph *const DMA2;
 #ifdef __STM32F4xx__
-extern dma_t *const DMA2D;
+extern DMA_periph *const DMA2D;
 #endif
 
-void dma_req_init(struct dma_request *const req);
-int dma_periph_to_mem(dma_t *const dma, const void *const mem, const volatile void *const periph, const size_t len, const struct dma_request *const req);
-int dma_mem_to_periph(dma_t *const dma, const void *const mem, const volatile void *const periph, const size_t len, const struct dma_request *const req);
-int dma_mem_to_mem(dma_t *const dma, const void *const mem1, const void *const mem2, const size_t len, const struct dma_request *const req);
 void DMA_Init(void);
 
 #endif /* _DMA_H */
