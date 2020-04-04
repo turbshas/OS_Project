@@ -37,6 +37,7 @@ class UsartPeriph {
         void send(const uint8_t byte) volatile;
         void finish_send() volatile;
         void init() volatile;
+        volatile uint32_t *get_address_for_dma() volatile;
 };
 
 typedef volatile UsartPeriph *const usart_t;

@@ -71,3 +71,9 @@ UsartPeriph::init() volatile
     disable();
 }
 
+volatile uint32_t *
+UsartPeriph::get_address_for_dma() volatile
+{
+    return &DR;
+}
+

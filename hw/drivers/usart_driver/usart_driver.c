@@ -3,12 +3,12 @@
 int
 usart_send_byte(usart_t usart, const char byte)
 {
-    usart_enable(usart);
+    usart->enable();
 
-    usart_send(usart, byte);
-    usart_finish_send(usart);
+    usart->send(byte);
+    usart->finish_send();
 
-    usart_disable(usart);
+    usart->disable();
 
     return 0;
 }
@@ -18,11 +18,11 @@ usart_send_string(usart_t usart, const char *const str, const uint8_t len)
 {
     int count = 0;
 
-    usart_enable(usart);
+    usart->enable();
 
     DmaRequest dma_req;
     dma_req.mem1 = static_cast<const void *>(str);
-    dma_req.periph = &usart->DR;
+    dma_req.periph = usart->get_address_for_dma();
     dma_req.len = len;
 
     dma_req.stream = 0;
@@ -48,6 +48,6 @@ usart_send_string(usart_t usart, const char *const str, const uint8_t len)
 void
 usart_driver_init(void)
 {
-    usart_init(USART3);
+    USART3->init();
 }
 

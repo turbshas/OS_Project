@@ -1,18 +1,6 @@
 #include "sys_ctl_block.h"
 #include "sys_timer.h"
 
-#define CSR_COUNTFLAG   (1u << 16)
-#define CSR_CLKSOURCE   (1u << 2)
-#define CSR_TICKINT     (1u << 1)
-#define CSR_ENABLE      (1u << 0)
-
-#define RVR_RELOAD      0x00ffffff
-#define CVR_CURRENT     0x00ffffff
-
-#define CALIB_NOREF     (1u << 31)
-#define CALIB_SKEW      (1u << 30)
-#define CALIB_TENMS     0x00ffffff
-
 struct cpu_regs_on_stack {
     uint32_t R4_11[8];
     uint32_t R0_3[4];
