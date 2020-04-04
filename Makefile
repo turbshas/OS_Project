@@ -4,6 +4,7 @@ MAKELEVEL := 1
 endif
 
 SRC_FILES :=
+SRC_FILE_EXTENSION := cpp
 
 INCLUDES := -I.
 
@@ -14,7 +15,7 @@ MODULES :=\
 include $(patsubst %,%/Makefile, $(MODULES))
 
 # Rules for building
-OBJ_FILES := $(patsubst %.c,build/%.o,$(SRC_FILES))
+OBJ_FILES := $(patsubst %.$(SRC_FILE_EXTENSION),build/%.o,$(SRC_FILES))
 DEP_FILES := $(OBJ_FILES:.o=.dep)
 
 # CC := arm-none-eabi-gcc
@@ -47,7 +48,7 @@ all: $(BINARY)
 # Comment out the line below to print commands used when building
 HIDE_OUTPUT := @
 
-build/%.o: %.c
+build/%.o: %.$(SRC_FILE_EXTENSION)
 	@echo "    CC    $<"
 	$(HIDE_OUTPUT)mkdir -p $(dir $@)
 	$(HIDE_OUTPUT)$(CC) -c -MMD $(COMPILE_FLAGS) $(INCLUDES) $< -o $@

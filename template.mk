@@ -10,7 +10,7 @@ else
 endif
 
 else
-SRC_FILES += $(patsubst $(CURDIR)/%,%,$(wildcard $(MAKEFILE_DIR)/*.c))
+SRC_FILES += $(patsubst $(CURDIR)/%,%,$(wildcard $(MAKEFILE_DIR)/*.$(SRC_FILE_EXTENSION)))
 INCLUDES += -I$(MAKEFILE_DIR)
 endif
 
