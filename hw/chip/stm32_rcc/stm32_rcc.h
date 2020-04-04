@@ -3,109 +3,7 @@
 
 #include "chip_common.h"
 
-#define AHB1_OTGHSULPI  (1u << 30)
-#define AHB1_OTGHS      (1u << 29)
-#define AHB1_ETHPTP     (1u << 28)
-#define AHB1_ETHRX      (1u << 27)
-#define AHB1_ETHTX      (1u << 26)
-#define AHB1_ETHMAC     (1u << 25)
-#define AHB1_DMA2       (1u << 22)
-#define AHB1_DMA1       (1u << 21)
-#define AHB1_BKPSRAM    (1u << 18)
-#define AHB1_SRAM2      (1u << 17)
-#define AHB1_SRAM1      (1u << 16)
-#define AHB1_FLITF      (1u << 15)
-#define AHB1_CRC        (1u << 12)
-#define AHB1_GPIOI      (1u << 8)
-#define AHB1_GPIOH      (1u << 7)
-#define AHB1_GPIOG      (1u << 6)
-#define AHB1_GPIOF      (1u << 5)
-#define AHB1_GPIOE      (1u << 4)
-#define AHB1_GPIOD      (1u << 3)
-#define AHB1_GPIOC      (1u << 2)
-#define AHB1_GPIOB      (1u << 1)
-#define AHB1_GPIOA      (1u << 0)
-
-#define AHB2_OTGFS      (1u << 7)
-#define AHB2_RNG        (1u << 6)
-#define AHB2_HASH       (1u << 5)
-#define AHB2_CRYP       (1u << 4)
-#define AHB2_DCMI       (1u << 0)
-
-#define AHB3_FSMC       (1u << 0)
-
-#define APB1_DAC        (1u << 29)
-#define APB1_PWR        (1u << 28)
-#define APB1_CAN2       (1u << 26)
-#define APB1_CAN1       (1u << 25)
-#define APB1_I2C3       (1u << 23)
-#define APB1_I2C2       (1u << 22)
-#define APB1_I2C1       (1u << 21)
-#define APB1_UART5      (1u << 20)
-#define APB1_UART4      (1u << 19)
-#define APB1_USART3     (1u << 18)
-#define APB1_USART2     (1u << 17)
-#define APB1_SPI3       (1u << 15)
-#define APB1_SPI2       (1u << 14)
-#define APB1_WWDG       (1u << 11)
-#define APB1_TIM14      (1u << 8)
-#define APB1_TIM13      (1u << 7)
-#define APB1_TIM12      (1u << 6)
-#define APB1_TIM7       (1u << 5)
-#define APB1_TIM6       (1u << 4)
-#define APB1_TIM5       (1u << 3)
-#define APB1_TIM4       (1u << 2)
-#define APB1_TIM3       (1u << 1)
-#define APB1_TIM2       (1u << 0)
-
-#define APB2_TIM11      (1u << 18)
-#define APB2_TIM10      (1u << 17)
-#define APB2_TIM9       (1u << 16)
-#define APB2_SYSCFG     (1u << 14)
-#define APB2_SPI1       (1u << 12)
-#define APB2_SDIO       (1u << 11)
-#define APB2_ADC        (1u << 8)
-#define APB2_USART6     (1u << 5)
-#define APB2_USART1     (1u << 4)
-#define APB2_TIM8       (1u << 1)
-#define APB2_TIM1       (1u << 0)
-
-#define RCC_CR_HSION    (1u << 0)
-#define RCC_CR_HSEON    (1u << 16)
-#define RCC_CR_HSEBYP   (1u << 18)
-#define RCC_CR_CSSON    (1u << 19)
-#define RCC_CR_PLLON    (1u << 24)
-#define RCC_CR_PLLRDY   (1u << 25)
-
-#define RCC_PLLCFGR_PLLQ        0xf000000
-#define RCC_PLLCFGR_PLLSRC      (1u << 22)
-#define RCC_PLLCFGR_PLLP        0x30000
-#define RCC_PLLCFGR_PLLN        0x7fc0
-#define RCC_PLLCFGR_PLLM        0x3f
-
-#define RCC_PLLCFGR_PLLQ_SHIFT  24u
-#define RCC_PLLCFGR_PLLP_SHIFT  16u
-#define RCC_PLLCFGR_PLLN_SHIFT  6u
-#define RCC_PLLCFGR_PLLM_SHIFT  0
-
-#define RCC_CFGR_SW             0x3
-#define RCC_CFGR_SWS            0xc
-#define RCC_CFGR_HPRE           0xf0
-#define RCC_CFGR_PPRE1          0xfc00
-#define RCC_CFGR_PPRE2          0xe000
-
-#define RCC_CFGR_SW_SHIFT       0
-#define RCC_CFGR_SWS_SHIFT      2u
-#define RCC_CFGR_HPRE_SHIFT     4u
-#define RCC_CFGR_PPRE1_SHIFT    10u
-#define RCC_CFGR_PPRE2_SHIFT    13u
-
-#define RCC_BDCR_RTCEN          (1u << 15)
-#define RCC_BDCR_RTCSEL         0x300
-
-#define RCC_BDCR_RTCSEL_SHIFT   8u
-
-struct RCC_Regs {
+class RccPeriph {
     uint32_t CR;
     uint32_t PLLCFGR;
     uint32_t CFGR;
@@ -140,34 +38,67 @@ struct RCC_Regs {
     uint32_t rsvd10;
     uint32_t SSCGR;
     uint32_t PLLI2SCFGR;
+
+    enum AHB1_periphs { GPIOA = (1u <<  0), GPIOB   = (1u <<  1), GPIOC = (1u <<  2),
+                        GPIOD = (1u <<  3), GPIOE   = (1u <<  4), GPIOF = (1u <<  5),
+                        GPIOG = (1u <<  6), GPIOH   = (1u <<  7), GPIOI = (1u <<  8),
+                        CRC   = (1u << 12), FLITF   = (1u << 15), SRAM1 = (1u << 16),
+                        SRAM2 = (1u << 17), BKPSRAM = (1u << 18), DMA1  = (1u << 21),
+                        DMA2  = (1u << 22), ETHMAC  = (1u << 25), ETHTX = (1u << 25),
+                        ETHRX = (1u << 27), ETHPTP  = (1u << 28), OTGHS = (1u << 29),
+                        OTGHSULPI = (1u << 30) };
+
+    enum AHB2_periphs { DCMI = (1u << 0), CRYP  = (1u << 4), HASH = (1u << 5),
+                        RNG  = (1u << 6), OTGFS = (1u << 7) };
+
+    enum AHB3_periphs { FSMC = (1u << 0) };
+
+    enum APB1_periphs { TIM2   = (1u <<  0), TIM3   = (1u <<  1), TIM4  = (1u <<  2),
+                        TIM5   = (1u <<  3), TIM6   = (1u <<  4), TIM7  = (1u <<  5),
+                        TIM12  = (1u <<  6), TIM13  = (1u <<  7), TIM14 = (1u <<  8),
+                        WWDG   = (1u << 11), SPI2   = (1u << 14), SPI3  = (1u << 15),
+                        USART2 = (1u << 17), USART3 = (1u << 18), UART4 = (1u << 19),
+                        UART5  = (1u << 20), I2C1   = (1u << 21), I2C2  = (1u << 22),
+                        I2C3   = (1u << 23), CAN1   = (1u << 25), CAN2  = (1u << 26),
+                        PWR    = (1u << 28), DAC    = (1u << 29) };
+
+    enum APB2_periphs { TIM1   = (1u <<  0), TIM8   = (1u <<  1), USART1 = (1u <<  4),
+                        USART6 = (1u <<  5), ADC    = (1u <<  8), SDIO   = (1u << 11),
+                        SPI1   = (1u << 12), SYSCFG = (1u << 14), TIM9   = (1u << 16),
+                        TIM10  = (1u << 17), TIM11  = (1u << 18) };
+
+    private:
+        void periph_cmd(volatile uint32_t *const reg, const uint32_t periph, const bool state) volatile;
+    public:
+        /*
+         * Periph commands enable/disable each peripheral
+         * Low-Power periph commands enable/disable each peripheral in low power mode
+         * Reset commands reset each peripheral
+         */
+        void AHB1_periph_cmd(const enum AHB1_periphs periph, const bool state) volatile;
+        void AHB1_LP_periph_cmd(const enum AHB1_periphs periph, const bool state) volatile;
+        void AHB1_reset_cmd(const enum AHB1_periphs periph, const bool state) volatile;
+
+        void AHB2_periph_cmd(const enum AHB2_periphs periph, const bool state) volatile;
+        void AHB2_LP_periph_cmd(const enum AHB2_periphs periph, const bool state) volatile;
+        void AHB2_reset_cmd(const enum AHB2_periphs periph, const bool state) volatile;
+
+        void AHB3_periph_cmd(const enum AHB3_periphs periph, const bool state) volatile;
+        void AHB3_LP_periph_cmd(const enum AHB3_periphs periph, const bool state) volatile;
+        void AHB3_reset_cmd(const enum AHB3_periphs periph, const bool state) volatile;
+
+        void APB1_periph_cmd(const enum APB1_periphs periph, const bool state) volatile;
+        void APB1_LP_periph_cmd(const enum APB1_periphs periph, const bool state) volatile;
+        void APB1_reset_cmd(const enum APB1_periphs periph, const bool state) volatile;
+
+        void APB2_periph_cmd(const enum APB2_periphs periph, const bool state) volatile;
+        void APB2_LP_periph_cmd(const enum APB2_periphs periph, const bool state) volatile;
+        void APB2_reset_cmd(const enum APB2_periphs periph, const bool state) volatile;
+
+        void init() volatile;
 };
 
-/*
- * Periph commands enable/disable each peripheral
- * Low-Power periph commands enable/disable each peripheral in low power mode
- * Reset commands reset each peripheral
- */
-void rcc_AHB1_periph_cmd(const uint32_t periph, const int state);
-void rcc_AHB1_LP_periph_cmd(const uint32_t periph, const int state);
-void rcc_AHB1_reset_cmd(const uint32_t periph, const int state);
-
-void rcc_AHB2_periph_cmd(const uint32_t periph, const int state);
-void rcc_AHB2_LP_periph_cmd(const uint32_t periph, const int state);
-void rcc_AHB2_reset_cmd(const uint32_t periph, const int state);
-
-void rcc_AHB3_periph_cmd(const uint32_t periph, const int state);
-void rcc_AHB3_LP_periph_cmd(const uint32_t periph, const int state);
-void rcc_AHB3_reset_cmd(const uint32_t periph, const int state);
-
-void rcc_APB1_periph_cmd(const uint32_t periph, const int state);
-void rcc_APB1_LP_periph_cmd(const uint32_t periph, const int state);
-void rcc_APB1_reset_cmd(const uint32_t periph, const int state);
-
-void rcc_APB2_periph_cmd(const uint32_t periph, const int state);
-void rcc_APB2_LP_periph_cmd(const uint32_t periph, const int state);
-void rcc_APB2_reset_cmd(const uint32_t periph, const int state);
-
-void rcc_init(void);
+extern volatile RccPeriph *const RCC;
 
 #endif /* _RCC_H */
 

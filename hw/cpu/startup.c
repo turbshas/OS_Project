@@ -46,8 +46,9 @@ Reset_Handler(void)
     (void)main();
 }
 
-__attribute__((section ("ISR_VECTORS"))) const void *isr_vector_table[] = {
-    _INITIAL_SP,
+typedef void (*FunctionPointer)();
+__attribute__((section ("ISR_VECTORS"))) FunctionPointer isr_vector_table[] = {
+    reinterpret_cast<FunctionPointer>(_INITIAL_SP),
     Reset_Handler,
     NMI_Handler,
     HardFault_Handler,
@@ -56,7 +57,7 @@ __attribute__((section ("ISR_VECTORS"))) const void *isr_vector_table[] = {
     UsageFault_Handler,
 
     /* Next 4 entries are reserved */
-    (void *)0x4e65576f, /* Pebble magic, apparently */
+    reinterpret_cast<FunctionPointer>(0x4e65576f), /* Pebble magic, apparently */
     NULL,
     NULL,
     NULL,
@@ -196,11 +197,11 @@ System_Init(void)
      * Only initialize things required for
      * normal operation here e.g. clocks
      */
-    rcc_init();
+    RCC->init();
     sys_timer_init();
 }
 
-__attribute__((noreturn)) int
+int
 main(void)
 {
     System_Init();
@@ -214,7 +215,7 @@ main(void)
     usart_send_string(USART3, "hello world\n", sizeof("hello world\n"));
 
     struct RTC_datetime dt;
-    RTC_get_datetime(&dt);
+    RTC->get_datetime(&dt);
 
     alloc_init();
     void *p = _malloc(64);
@@ -223,4 +224,6 @@ main(void)
     _free(p2);
 
     for ( ;; ) {}
+
+    return 0;
 }

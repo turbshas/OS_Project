@@ -1,9 +1,5 @@
+#include "sys_ctl_block.h"
 #include "sys_timer.h"
-
-#define SYSTIMER_BASE 0xe000e010
-#define SYS_CTL_BLOCK_BASE 0xe000e008
-#define ICSR_PENDSVSET  (1u << 28)
-#define ICSR_PENDSVCLR  (1u << 27)
 
 #define CSR_COUNTFLAG   (1u << 16)
 #define CSR_CLKSOURCE   (1u << 2)
@@ -16,57 +12,6 @@
 #define CALIB_NOREF     (1u << 31)
 #define CALIB_SKEW      (1u << 30)
 #define CALIB_TENMS     0x00ffffff
-
-#define SET_PENDSV() do { SYS_CTL->ICSR |= ICSR_PENDSVSET; } while(0)
-#define CLEAR_PENDSV() do { SYS_CTL->ICSR |= ICSR_PENDSVCLR; } while(0)
-
-struct sys_timer_regs {
-    uint32_t CSR;
-    uint32_t RVR;
-    uint32_t CVR;
-    uint32_t CALIB;
-};
-
-static volatile struct sys_timer_regs *const SYST = (void *)SYSTIMER_BASE;
-
-struct sys_ctl_block {
-    uint32_t ACTLR;
-    uint32_t rsvd1;
-    struct sys_timer_regs st_regs;
-    uint32_t rsvd2[824];
-    uint32_t CPUID;
-    uint32_t ICSR;
-    uint32_t VTOR;
-    uint32_t AIRCR;
-    uint32_t SCR;
-    uint32_t CCR;
-    uint32_t SHPR1;
-    uint32_t SHPR2;
-    uint32_t SHPR3;
-    uint32_t SHCRS;
-    uint32_t CFSR;
-    uint32_t MMSR;
-    uint32_t BFSR;
-    uint32_t UFSR;
-    uint32_t HFSR;
-    uint32_t MMAR;
-    uint32_t BFAR;
-    uint32_t AFSR;
-};
-
-static volatile struct sys_ctl_block *const SYS_CTL = (void *)SYS_CTL_BLOCK_BASE;
-
-static void
-disable_sys_tick(void)
-{
-    SYST->CSR &= ~CSR_TICKINT;
-}
-
-static void
-enable_sys_tick(void)
-{
-    SYST->CSR |= CSR_TICKINT;
-}
 
 struct cpu_regs_on_stack {
     uint32_t R4_11[8];
@@ -104,11 +49,11 @@ thread_2(void)
     asm("WFI");
 }
 
-__attribute__((naked))
+__attribute__((interrupt, naked, noreturn))
 void
 PendSV_Handler(void)
 {
-    CLEAR_PENDSV();
+    SYS_CTL->clear_pending_pendsv();
 
     register void *val asm("r1");
     val = &active_stack;
@@ -155,7 +100,7 @@ ctx_switcher(void)
     :
     : "i" (sizeof(struct cpu_regs_on_stack)));
 
-    disable_sys_tick();
+    SYS_CTL->disable_sys_tick();
     if (active_stack != &thread_sp[3]) {
         active_stack = &thread_sp[3];
         thread_sp[3]->PC = (uint32_t)thread_2;
@@ -163,8 +108,8 @@ ctx_switcher(void)
         active_stack = &thread_sp[2];
         thread_sp[2]->PC = (uint32_t)thread_1;
     }
-    enable_sys_tick();
-    SET_PENDSV();
+    SYS_CTL->enable_sys_tick();
+    SYS_CTL->set_pending_pendsv();
 }
 
 __attribute__((naked, interrupt))
@@ -240,40 +185,26 @@ sys_timer_init(void)
      * bit 1 is used for privileged(1)/unprivileged(0).
      * bit 0 is used for MSP(1)/PSP(0)
      */
-    thread_sp[0] = (void *)((uint32_t)&main_stack[63] | 0x3);
+    thread_sp[0] = reinterpret_cast<struct cpu_regs_on_stack *>((uint32_t)&main_stack[63] | 0x3);
 
     /* Setup registers for testing. */
     struct cpu_regs_on_stack *p;
-    p = (void *)(&ctx_stack[63] - (sizeof(struct cpu_regs_on_stack) / 4));
+    p = reinterpret_cast<struct cpu_regs_on_stack *>(&ctx_stack[63] - (sizeof(struct cpu_regs_on_stack) / 4));
     p->PC = (uint32_t)ctx_switcher;
     p->PSR = 0x01000000;
-    thread_sp[1] = (void *)((uint32_t)p | 0x2);
+    thread_sp[1] = reinterpret_cast<struct cpu_regs_on_stack *>((uint32_t)p | 0x2);
 
-    p = (void *)(&t1_stack[63] - (sizeof(struct cpu_regs_on_stack) / 4));
+    p = reinterpret_cast<struct cpu_regs_on_stack *>(&t1_stack[63] - (sizeof(struct cpu_regs_on_stack) / 4));
     p->PC = (uint32_t)thread_1;
     p->PSR = 0x01000000;
-    thread_sp[2] = (void *)((uint32_t)p | 0x0);
+    thread_sp[2] = reinterpret_cast<struct cpu_regs_on_stack *>((uint32_t)p | 0x0);
 
-    p = (void *)(&t2_stack[63] - (sizeof(struct cpu_regs_on_stack) / 4));
+    p = reinterpret_cast<struct cpu_regs_on_stack *>(&t2_stack[63] - (sizeof(struct cpu_regs_on_stack) / 4));
     p->PC = (uint32_t)thread_2;
     p->PSR = 0x01000000;
-    thread_sp[3] = (void *)((uint32_t)p | 0x0);
+    thread_sp[3] = reinterpret_cast<struct cpu_regs_on_stack *>((uint32_t)p | 0x0);
     /* Everything else 0. */
 
-    /*
-     * Setup the system timer to tick every 8 ms.
-     * System clock is setup for 64 MHz.
-     *
-     * System timer clock is 64 MHz / 8 = 8 MHz,
-     * so set reload value to 63999 so that it ticks
-     * every 64000 cycles.
-     */
-    SYST->RVR &= ~RVR_RELOAD;
-    SYST->RVR |= 63999u;
-
-    /* Set clock source to external clock, enable interrupts. */
-    SYST->CSR &= ~CSR_CLKSOURCE;
-    SYST->CSR |= CSR_TICKINT;
-    SYST->CSR |= CSR_ENABLE;
+    SYS_CTL->setup_sys_timer();
 }
 

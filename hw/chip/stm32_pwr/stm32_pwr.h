@@ -3,8 +3,17 @@
 
 #include "chip_common.h"
 
-void pwr_disable_bd_write_protection(void);
-void pwr_enable_bd_write_protection(void);
+class PwrPeriph {
+    uint32_t CR;
+    uint32_t CSR;
+
+    public:
+        void disable_bd_write_protection() volatile;
+        void enable_bd_write_protection() volatile;
+};
+
+extern volatile PwrPeriph *const PWR;
+
 void pwr_init(void);
 
 #endif

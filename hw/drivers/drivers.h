@@ -69,7 +69,7 @@
 #define GPIOH_BASE          (PERIPH_BASE + 0x21c00)
 #define GPIOI_BASE          (PERIPH_BASE + 0x22000)
 #define CRC_BASE            (PERIPH_BASE + 0x23000)
-#define FLASH_BASE          (PERIPH_BASE + 0x23c00) /* Location of flash interface register, not flash memory itself */
+#define FLASH_REG_BASE      (PERIPH_BASE + 0x23c00) /* Location of flash interface register, not flash memory itself */
 #define BKPSRAM_BASE        (PERIPH_BASE + 0x24000)
 #define ETH_BASE            (PERIPH_BASE + 0x28000)
 #define OTG_HS_BASE         (PERIPH_BASE + 0x40000)

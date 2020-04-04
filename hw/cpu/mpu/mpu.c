@@ -19,6 +19,7 @@
 #define MPU_RASR_AP 0x7000000
 #define MPU_RASR_AP_SHIFT 24u
 #define MPU_RASR_TEX 0x380000
+#define MPU_RASR_TEX_SHIFT 19u
 #define MPU_RASR_SCB 0x70000
 #define MPU_RASR_S 0x40000
 #define MPU_RASR_C 0x20000
@@ -26,17 +27,12 @@
 #define MPU_RASR_SRD 0xff00
 #define MPU_RASR_SRD_SHIFT 8u
 #define MPU_RASR_SIZE 0x3e
+#define MPU_RASR_SIZE_SHIFT 1u
 #define MPU_RASR_EN 0x1
 #define MPU_RASR_ALL (MPU_RASR_XN | MPU_RASR_AP | MPU_RASR_TEX | MPU_RASR_SCB \
         | MPU_RASR_SRD | MPU_RASR_SIZE | MPU_RASR_EN)
 
-#define MPU_MIN_REGION_SIZE 4u
 #define MPU_MIN_SIZE_FOR_SRD 7u
-#define MPU_MAX_REGION_SIZE 31u
-
-#define MPU_MAX_SRD 0xff
-#define MPU_MAX_AP 0x7
-#define MPU_MAX_TEX 0x7
 #define MPU_NUM_REGIONS 8u
 
 /*
@@ -45,207 +41,136 @@
  * -> Valid address bits are ~((1u << (SIZE + 1)))
  */
 
-struct mpu_regs {
-    uint32_t TYPE;
-    uint32_t CTRL;
-    uint32_t RNR;
-    uint32_t RBAR;
-    uint32_t RASR;
-    uint32_t RBAR_A1;
-    uint32_t RASR_A1;
-    uint32_t RBAR_A2;
-    uint32_t RASR_A2;
-    uint32_t RBAR_A3;
-    uint32_t RASR_A3;
-};
-
-static volatile struct mpu_regs *MPU = (void *)MPU_BASE;
+volatile Mpu *const MPU = reinterpret_cast<volatile Mpu *>(MPU_BASE);
 
 uint32_t
-mpu_get_addr(const struct mpu_region *const region) {
-    return (region->addr & MPU_RBAR_ADDR);
+Mpu::get_rbar(const unsigned num, const mpu_region &region) const volatile
+{
+    return region.get_addr() | MPU_RBAR_VALID | num;
 }
 
 uint32_t
-mpu_get_size(const struct mpu_region *const region) {
-    return (region->attr_size & MPU_RASR_SIZE);
+Mpu::get_rasr(const mpu_region &region) const volatile
+{
+    uint32_t rasr = region.get_access_perms() << MPU_RASR_AP_SHIFT
+        | region.get_type_expansion() << MPU_RASR_TEX_SHIFT
+        | region.get_subregion_disable_bits() << MPU_RASR_SRD_SHIFT
+        | region.get_size() << MPU_RASR_SIZE_SHIFT;
+
+    if (!region.get_executable()) {
+        rasr |= MPU_RASR_XN;
+    }
+    if (region.get_cacheable()) {
+        rasr |= MPU_RASR_C;
+    }
+    if (region.get_bufferable()) {
+        rasr |= MPU_RASR_B;
+    }
+    if (region.get_shareable()) {
+        rasr |= MPU_RASR_S;
+    }
+
+    return rasr;
 }
 
 int
-mpu_set_addr_size(struct mpu_region *const region, const uint32_t addr, const uint32_t size) {
-    if (size < MPU_MIN_REGION_SIZE) {
-        return -1;
-    } else if (size > MPU_MAX_REGION_SIZE) {
-        return -1;
-    }
-
-    /* Only bits [31:N] in addr are valid where N = size + 1 */
-    const uint32_t unused_bits = (1u << (size + 1)) - 1;
-    if (addr & unused_bits) {
-        /* Bits [N-1:5] in addr should be 0 */
-        return -2;
-    }
-
-    region->addr &= ~MPU_RBAR_ADDR;
-    region->addr |= addr;
-    region->attr_size &= ~MPU_RASR_SIZE;
-    region->attr_size |= size;
-    return 0;
-}
-
-uint32_t
-mpu_get_srd(const struct mpu_region *const region) {
-    return (region->attr_size & MPU_RASR_SRD);
-}
-
-int
-mpu_set_srd(struct mpu_region *const region, const uint32_t srd) {
-    if (srd > MPU_MAX_SRD) {
-        return -1;
-    }
-
-    region->attr_size &= ~MPU_RASR_SRD;
-    region->attr_size |= (srd << MPU_RASR_SRD_SHIFT);
-    return 0;
-}
-
-uint32_t
-mpu_get_attr(const struct mpu_region *const region) {
-    return (region->attr_size & (MPU_RASR_XN | MPU_RASR_TEX | MPU_RASR_SCB));
-}
-
-int
-mpu_set_attr(struct mpu_region *const region, const unsigned type_expansion, const unsigned executable, const unsigned cacheable, const unsigned bufferable, const unsigned shareable) {
-    if (type_expansion > MPU_MAX_TEX) {
-        return -1;
-    }
-
-    if (type_expansion == 0x1) {
-        if ((cacheable && !bufferable) || (bufferable && !cacheable)) {
-            /* Those combinations are reserved */
-            return -2;
-        }
-    } else if (type_expansion == 0x2) {
-        if ((bufferable && !cacheable) || cacheable) {
-            /* Those combinations are reserved */
-            return -2;
-        }
-    }
-
-    region->attr_size &= ~(MPU_RASR_XN | MPU_RASR_TEX | MPU_RASR_SCB);
-    region->attr_size |= type_expansion;
-    if (executable) {
-        region->attr_size |= MPU_RASR_XN;
-    }
-    if (shareable) {
-        region->attr_size |= MPU_RASR_S;
-    }
-    if (cacheable) {
-        region->attr_size |= MPU_RASR_C;
-    }
-    if (bufferable) {
-        region->attr_size |= MPU_RASR_B;
-    }
-
-    return 0;
-}
-
-uint32_t
-mpu_get_ap(const struct mpu_region *const region) {
-    return (region->attr_size & MPU_RASR_AP);
-}
-
-int
-mpu_set_ap(struct mpu_region *const region, const uint32_t ap) {
-    if (ap > MPU_MAX_AP) {
-        return -1;
-    } else if (ap == MPU_AP_RSVD) {
-        return -1;
-    }
-
-    region->attr_size &= ~MPU_RASR_AP;
-    region->attr_size |= (ap << MPU_RASR_AP_SHIFT);
-    return 0;
-}
-
-int
-mpu_get_config(const unsigned num, struct mpu_region *const region) {
+Mpu::get_config(const unsigned num, mpu_region &region) volatile
+{
     if (num >= MPU_NUM_REGIONS) {
         return -1;
     }
 
-    uint32_t rnr = MPU->RNR;
+    uint32_t rnr = RNR;
     rnr &= ~MPU_RNR_REGION;
     rnr |= num;
-    MPU->RNR = rnr;
-    region->addr = MPU->RBAR;
-    region->attr_size = MPU->RASR;
+    RNR = rnr;
+
+    const uint32_t rbar_val = RBAR;
+    const uint32_t rasr_val = RASR;
+
+    const uint32_t addr = rbar_val & MPU_RBAR_ADDR;
+    const uint32_t size = rasr_val & MPU_RASR_SIZE;
+    region.set_addr_size(addr, size);
+
+    const uint32_t srd = (rasr_val & MPU_RASR_SRD) >> MPU_RASR_SRD_SHIFT;
+    region.set_subregion_disable_bits(srd);
+
+    const enum mpu_region::access_permissions ap = static_cast<enum mpu_region::access_permissions>((rasr_val & MPU_RASR_AP) >> MPU_RASR_AP_SHIFT);
+    region.set_access_perms(ap);
+
+    const enum mpu_region::type_expansions te = static_cast<enum mpu_region::type_expansions>((rasr_val & MPU_RASR_TEX) >> MPU_RASR_TEX_SHIFT);
+    const bool xn = !(rasr_val & MPU_RASR_XN);
+    const bool c = rasr_val & MPU_RASR_C;
+    const bool b = rasr_val & MPU_RASR_B;
+    const bool s = rasr_val & MPU_RASR_S;
+    region.set_attr(te, xn, c, b, s);
+
     return 0;
 }
 
 int
-mpu_set_config(const unsigned num, const struct mpu_region *const region) {
+Mpu::set_config(const unsigned num, const mpu_region &region) volatile
+{
     if (num >= MPU_NUM_REGIONS) {
         return -1;
     }
 
-    if (((region->attr_size & MPU_RASR_SIZE) < MPU_MIN_SIZE_FOR_SRD)
-            && (region->attr_size & MPU_RASR_SRD)) {
+    if ((region.get_size() < MPU_MIN_SIZE_FOR_SRD)
+            && (region.get_subregion_disable_bits() != 0)) {
         /* Subregions requires a region size of 256 B or greater */
         return -2;
     }
 
-    const uint32_t rbar = region->addr | MPU_RBAR_VALID | num;
-    MPU->RBAR = rbar;
+    const uint32_t rbar_val = get_rbar(num, region);
+    const uint32_t rasr_val = get_rasr(region);
 
-    uint32_t rasr = MPU->RASR;
+    uint32_t rasr = RASR;
     rasr &= ~MPU_RASR_ALL;
-    rasr |= region->attr_size;
-    MPU->RASR = rasr;
+    rasr |= rasr_val;
+
+    RBAR = rbar_val;
+    RASR = rasr;
     return 0;
 }
 
 int
-mpu_region_enable(const unsigned num) {
+Mpu::region_enable(const unsigned num) volatile
+{
     if (num >= MPU_NUM_REGIONS) {
         return -1;
     }
 
-    uint32_t rnr = MPU->RNR;
+    uint32_t rnr = RNR;
     rnr &= ~MPU_RNR_REGION;
     rnr |= num;
-    MPU->RNR = rnr;
+    RNR = rnr;
 
-    MPU->RASR |= MPU_RASR_EN;
+    RASR |= MPU_RASR_EN;
     return 0;
 }
 
 int
-mpu_region_disable(const unsigned num) {
+Mpu::region_disable(const unsigned num) volatile
+{
     if (num >= MPU_NUM_REGIONS) {
         return -1;
     }
 
-    uint32_t rnr = MPU->RNR;
+    uint32_t rnr = RNR;
     rnr &= ~MPU_RNR_REGION;
     rnr |= num;
-    MPU->RNR = rnr;
+    RNR = rnr;
 
-    MPU->RASR &= ~MPU_RASR_EN;
+    RASR &= ~MPU_RASR_EN;
     return 0;
 }
 
 void
-mpu_region_init(struct mpu_region *const region) {
-    region->addr = 0;
-    region->attr_size = (MPU_AP_RW_RW << MPU_RASR_AP_SHIFT) | MPU_MAX_REGION_SIZE;
-}
-
-void
-mpu_init(void) {
+Mpu::init(void) volatile
+{
     /* Enable default mapping in privileged mode, disable MPU in Hard Faults */
-    MPU->CTRL |= MPU_CTRL_PRIVDEFENA;
-    MPU->CTRL &= ~MPU_CTRL_HFNMIENA;
-    MPU->CTRL |= MPU_CTRL_ENABLE;
+    CTRL |= MPU_CTRL_PRIVDEFENA;
+    CTRL &= ~MPU_CTRL_HFNMIENA;
+    CTRL |= MPU_CTRL_ENABLE;
 }
 

@@ -3,14 +3,20 @@
 
 #include "chip_common.h"
 
-struct syscfg_regs {
+class SyscfgPeriph {
     uint32_t MEMRM;
     uint32_t PMC;
     uint32_t EXTICR[4];
     uint32_t CMPCR;
+
+    private:
+        void set_exti_reg(const int reg, const int shift_amt, const int value) volatile;
+
+    public:
+        void set_exti_line(const int line, const int value) volatile;
 };
 
-void syscfg_set_exti_line(const uint32_t line, const uint32_t value);
+extern volatile SyscfgPeriph *const SYSCFG;
 
 #endif /* _SYSCFG_H */
 

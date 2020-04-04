@@ -9,39 +9,25 @@
 
 #define SYSCFG_PMC_MII_RMII_SEL (1u << 23)
 
-#define SYSCFG_EXTIx_0 (0xf << 0)
-#define SYSCFG_EXTIx_1 (0xf << 4)
-#define SYSCFG_EXTIx_2 (0xf << 8)
-#define SYSCFG_EXTIx_3 (0xf << 12)
-
-#define SYSCFG_EXTIx_0_SHIFT 0u
-#define SYSCFG_EXTIx_1_SHIFT 4u
-#define SYSCFG_EXTIx_2_SHIFT 8u
-#define SYSCFG_EXTIx_3_SHIFT 12u
-
 #define SYSCFG_CMPCR_READY (1u << 8)
 #define SYSCFG_CMPCR_CMP_PD (1u << 0)
 
-static volatile struct syscfg_regs *const SYSCFG = (void *)SYSCFG_BASE;
+volatile SyscfgPeriph *const SYSCFG = reinterpret_cast<volatile SyscfgPeriph *>(SYSCFG_BASE);
 
-static void
-syscfg_set_exti_reg(const uint32_t reg, const uint32_t line_bits, const uint32_t shift_amt, const uint32_t value)
+void
+SyscfgPeriph::set_exti_reg(const int reg, const int shift_amt, const int value) volatile
 {
-    uint32_t shifted_val = (value & 0xf) << shift_amt;
-    SYSCFG->EXTICR[reg] &= ~line_bits;
-    SYSCFG->EXTICR[reg] |= shifted_val;
+    const uint32_t shifted_val = (value & 0xf) << shift_amt;
+    EXTICR[reg] &= ~(0xf << shift_amt);
+    EXTICR[reg] |= shifted_val;
 }
 
 void
-syscfg_set_exti_line(const uint32_t line, const uint32_t value)
+SyscfgPeriph::set_exti_line(const int line, const int value) volatile
 {
-    uint32_t reg = (line & 0xC) >> 2;
-    switch (line & 0x3) {
-    case 0x0: syscfg_set_exti_reg(reg, SYSCFG_EXTIx_0, SYSCFG_EXTIx_0_SHIFT, value); break;
-    case 0x1: syscfg_set_exti_reg(reg, SYSCFG_EXTIx_1, SYSCFG_EXTIx_1_SHIFT, value); break;
-    case 0x2: syscfg_set_exti_reg(reg, SYSCFG_EXTIx_2, SYSCFG_EXTIx_2_SHIFT, value); break;
-    case 0x3: syscfg_set_exti_reg(reg, SYSCFG_EXTIx_3, SYSCFG_EXTIx_3_SHIFT, value); break;
-    default: break;
-    }
+    const int reg = (line & 0xC) >> 2;
+    const int line_in_reg = line & 0x3;
+    const int line_bits_shift_amt = line_in_reg << 2;
+    set_exti_reg(reg, line_bits_shift_amt, value);
 }
 

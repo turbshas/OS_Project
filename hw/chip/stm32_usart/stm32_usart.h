@@ -22,7 +22,7 @@
 #define USART_GTPR_GT   0xff00
 #define USART_GTPR_GT_SHIFT 8u
 
-struct USART_Regs {
+class UsartPeriph {
     uint32_t SR;
     uint32_t DR;
     uint32_t BRR;
@@ -30,9 +30,16 @@ struct USART_Regs {
     uint32_t CR2;
     uint32_t CR3;
     uint32_t GTPR;
+
+    public:
+        void enable() volatile;
+        void disable() volatile;
+        void send(const uint8_t byte) volatile;
+        void finish_send() volatile;
+        void init() volatile;
 };
 
-typedef volatile struct USART_Regs *const usart_t;
+typedef volatile UsartPeriph *const usart_t;
 
 extern usart_t USART1;
 extern usart_t USART2;
@@ -40,12 +47,6 @@ extern usart_t USART3;
 extern usart_t UART4;
 extern usart_t UART5;
 extern usart_t USART6;
-
-void usart_enable(usart_t usart);
-void usart_disable(usart_t usart);
-void usart_send(usart_t, const uint8_t byte);
-void usart_finish_send(usart_t usart);
-void usart_init(usart_t usart);
 
 #endif /* _USART_H */
 
