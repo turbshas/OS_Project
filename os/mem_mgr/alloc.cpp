@@ -47,11 +47,6 @@ which_skiplist_by_size(const size_t size) {
     }
 }
 
-struct free_entry;
-struct list_links;
-struct list_walker;
-class Skiplist;
-
 class Skiplist {
     public:
         void *malloc(const size_t size);
@@ -92,199 +87,190 @@ class Skiplist {
             list_links links;
 
             private:
-                void allocate_entire_block();
+                void advance_links();
 
             public:
                 list_walker(const unsigned skip_list, const Skiplist &list_start);
                 bool fits_size(const size_t size) const { return curr_block->size >= size; };
                 void move_next();
-                void *allocate(const size_t size);
-
-                void create_new_block(free_entry *const new_block, const size_t size);
-
-                void resize_allocated_block(const free_entry *const allocated_block, const size_t old_size, const size_t new_size);
-                void free(const size_t size);
         };
 
         size_t total_mem;
         size_t total_free;
         free_entry *heads[NUM_FREE_LISTS];
 
-        void expand_entry(free_entry *const p, const size_t expand_amt, list_walker &iter);
-        list_walker get_walker(const int skip_list) const;
+        list_walker get_walker(const unsigned skip_list) const;
+
+        void allocate_entire_block(list_walker& lw);
+        void *allocate_current(list_walker& lw, const size_t size);
+        void insert_new_block(list_walker& lw, free_entry& new_block, const size_t size);
+        void free_current(list_walker& lw, const size_t size);
+
+        void copy_and_resize(list_walker& lw, free_entry& dest, const free_entry& src, const size_t new_size);
+        void expand_entry(list_walker& lw, free_entry& entry, const size_t expand_amt);
+        void shrink_entry(list_walker& lw, free_entry& entry, const size_t shrink_amt);
+
+        void resize_allocated_block(list_walker& lw, const free_entry *const allocated_block, const size_t old_size, const size_t new_size);
 
         /* TODO: clean these function up */
-        void free_entry::copy_and_resize(const free_entry *const fe, const size_t new_size, list_links &links);
-        void free_entry::resize(const size_t new_size, list_links &links);
-        void list_links::advance_in_list(const free_entry *const dont_pass);
 };
 
-free_entry::free_entry(const free_entry *const fe)
+Skiplist::free_entry::free_entry(const free_entry& fe)
 {
     copy_from(fe);
 }
 
 void
-free_entry::copy_from(const free_entry *const fe)
+Skiplist::free_entry::copy_from(const free_entry& fe)
 {
-    size = fe->size;
-    for (unsigned i = 0; i < fe->skiplist(); i++) {
-        next[i] = fe->next[i];
+    size = fe.size;
+    for (unsigned i = 0; i < fe.skiplist(); i++) {
+        next[i] = fe.next[i];
     }
 }
 
-/* links must point to the next pointers previous to this */
-void
-free_entry::copy_and_resize(const free_entry *const fe, const size_t new_size, list_links &links)
-{
-    if (new_size == fe->size) {
-        copy_from(fe);
-        return;
-    }
-
-    size = new_size;
-    const bool expanding = new_size > fe->size;
-    const unsigned old_skip_list = fe->skiplist();
-    const unsigned new_skip_list = skiplist();
-
-    if (expanding) {
-        for (unsigned i = 0; i <= old_skip_list; i++) {
-            next[i] = fe->next[i];
-            *(links.lists[i]) = this;
-        }
-        for (unsigned i = (old_skip_list + 1); i <= new_skip_list; i++) {
-            next[i] = *(links.lists[i]);
-            *(links.lists[i]) = this;
-        }
-    } else {
-        for (unsigned i = 0; i <= new_skip_list; i++) {
-            next[i] = fe->next[i];
-            *(links.lists[i]) = this;
-        }
-        for (unsigned i = (new_skip_list + 1); i <= old_skip_list; i++) {
-            *(links.lists[i]) = fe->next[i];
-        }
-    }
-}
-
-/* links must point to the next pointers previous to this */
-void
-free_entry::resize(const size_t new_size, list_links &links)
-{
-    if (new_size == size) {
-        return;
-    }
-    const bool expanding = new_size > size;
-
-    const unsigned old_skip_list = skiplist();
-    size = new_size;
-    const unsigned new_skip_list = skiplist();
-
-    if (expanding) {
-        for (unsigned i = (old_skip_list + 1); i <= new_skip_list; i++) {
-            next[i] = *(links.lists[i]);
-            *(links.lists[i]) = this;
-        }
-    } else {
-        for (unsigned i = (new_skip_list + 1); i <= old_skip_list; i++) {
-            *(links.lists[i]) = this;
-        }
-    }
-}
-
-list_links::list_links(const Skiplist &list)
+Skiplist::list_links::list_links(const Skiplist &list)
 {
     for (unsigned i = 0; i < NUM_FREE_LISTS; i++) {
         lists[i] = const_cast<free_entry **>(&list.heads[i]);
     }
 }
 
-list_links::list_links(const free_entry &fe)
+Skiplist::list_walker::list_walker(const unsigned skip_list, const Skiplist &list_start)
+    : skiplist_num(skip_list),
+      curr_block(list_start.heads[skip_list]),
+      links(list_start) { }
+
+void
+Skiplist::list_walker::move_next()
 {
-    for (unsigned i = 0; i < NUM_FREE_LISTS; i++) {
-        lists[i] = const_cast<free_entry **>(&fe.next[i]);
-    }
+    curr_block = curr_block->next[skiplist_num];
+    advance_links();
 }
 
 void
-list_links::advance_in_list(const free_entry *const dont_pass)
+Skiplist::list_walker::advance_links()
 {
     for (unsigned i = 0; i < NUM_FREE_LISTS; i++) {
-        if (*(lists[i]) < dont_pass) {
+        if (*(links.lists[i]) < curr_block) {
             /* Advance the links forward, but only if they don't pass p.
              * This is because the links will be used to update the next
              * pointers in the list once an entry is allocated, so we need
              * to stay behind p.
              */
-            struct free_entry *next_entry = *(lists[i]);
-            lists[i] = &next_entry->next[i];
+            struct free_entry *next_entry = *(links.lists[i]);
+            links.lists[i] = &next_entry->next[i];
         }
     }
 }
 
-list_walker::list_walker(const unsigned skip_list, const Skiplist &list_start)
-    : skiplist_num(skip_list),
-      curr_block(list_start.heads[skip_list]),
-      links(list_start)
-{
-}
-
 void
-list_walker::create_new_block(free_entry *const new_block, const size_t size)
+Skiplist::expand_entry(list_walker& lw, free_entry& entry, const size_t expand_amt)
 {
-    new_block->size = size;
-    for (unsigned i = 0; i <= new_block->skiplist(); i++) {
-        new_block->next[i] = *(links.lists[i]);
-        *(links.lists[i]) = new_block;
+    const unsigned old_skiplist = entry.skiplist();
+    entry.size += expand_amt;
+    const unsigned new_skiplist = entry.skiplist();
+
+    for (unsigned i = (old_skiplist + 1); i <= new_skiplist; i++) {
+        entry.next[i] = *(lw.links.lists[i]);
+        *(lw.links.lists[i]) = &entry;
     }
 }
 
 void
-list_walker::allocate_entire_block()
+Skiplist::shrink_entry(list_walker& lw, free_entry& entry, const size_t shrink_amt)
 {
-    for (unsigned i = 0; i <= curr_block->skiplist(); i++) {
-        *(links.lists[i]) = curr_block->next[i];
+    const unsigned old_skiplist = entry.skiplist();
+    entry.size -= shrink_amt;
+    const unsigned new_skiplist = entry.skiplist();
+
+    for (unsigned i = (new_skiplist + 1); i <= old_skiplist; i++) {
+        *(lw.links.lists[i]) = entry.next[i];
     }
 }
 
 void
-list_walker::move_next()
+Skiplist::insert_new_block(list_walker& lw, free_entry& new_block, const size_t size)
 {
-    curr_block = curr_block->next[skiplist_num];
-    links.advance_in_list(curr_block);
+    new_block.size = size;
+    for (unsigned i = 0; i <= new_block.skiplist(); i++) {
+        new_block.next[i] = *(lw.links.lists[i]);
+        *(lw.links.lists[i]) = &new_block;
+    }
+}
+
+void
+Skiplist::allocate_entire_block(list_walker& lw)
+{
+    for (unsigned i = 0; i <= lw.curr_block->skiplist(); i++) {
+        *(lw.links.lists[i]) = lw.curr_block->next[i];
+    }
 }
 
 void *
-list_walker::allocate(const size_t size)
+Skiplist::allocate_current(list_walker& lw, const size_t size)
 {
-    if (curr_block->size < (size + MIN_ALLOC_SIZE)) {
+    if (lw.curr_block->size < (size + MIN_ALLOC_SIZE)) {
         /*
          * If we allocated this block, the leftover would
          * be too small. Allocate the whole thing
          */
 
         /* Update pointers that pointed at p to point to the block after p */
-        allocate_entire_block();
+        allocate_entire_block(lw);
     } else {
         /* We need to split the block */
 
         /* Copy values to intermediate in case of overlap */
-        free_entry temp_entry(curr_block);
+        free_entry temp_entry(*(lw.curr_block));
 
         /* Set the values for the new entry */
-        const uintptr_t curr_block_int = reinterpret_cast<uintptr_t>(curr_block);
+        const uintptr_t curr_block_int = reinterpret_cast<uintptr_t>(lw.curr_block);
         free_entry *new_entry = reinterpret_cast<free_entry *>(curr_block_int + size);
-        new_entry->copy_and_resize(&temp_entry, temp_entry.size - size, links);
+        copy_and_resize(lw, *new_entry, temp_entry, temp_entry.size - size);
     }
 
-    return curr_block;
+    return lw.curr_block;
 }
 
 void
-list_walker::resize_allocated_block(const free_entry *const allocated_block, const size_t old_size, const size_t new_size)
+Skiplist::copy_and_resize(list_walker& lw, free_entry& dest, const free_entry& src, const size_t new_size)
+{
+    if (new_size == src.size) {
+        dest.copy_from(src);
+        return;
+    }
+
+    dest.size = new_size;
+    const bool expanding = new_size > src.size;
+    const unsigned old_skiplist = src.skiplist();
+    const unsigned new_skiplist = dest.skiplist();
+
+    if (expanding) {
+        for (unsigned i = 0; i <= old_skiplist; i++) {
+            dest.next[i] = src.next[i];
+            *(lw.links.lists[i]) = &dest;
+        }
+        for (unsigned i = (old_skiplist + 1); i <= new_skiplist; i++) {
+            dest.next[i] = *(lw.links.lists[i]);
+            *(lw.links.lists[i]) = &dest;
+        }
+    } else {
+        for (unsigned i = 0; i <= new_skiplist; i++) {
+            dest.next[i] = src.next[i];
+            *(lw.links.lists[i]) = &dest;
+        }
+        for (unsigned i = (new_skiplist + 1); i <= old_skiplist; i++) {
+            *(lw.links.lists[i]) = src.next[i];
+        }
+    }
+}
+
+void
+Skiplist::resize_allocated_block(list_walker& lw, const free_entry *const allocated_block, const size_t old_size, const size_t new_size)
 {
     const uintptr_t ab_int = reinterpret_cast<uintptr_t>(allocated_block);
-    const uintptr_t curr_block_int = reinterpret_cast<uintptr_t>(curr_block);
+    const uintptr_t curr_block_int = reinterpret_cast<uintptr_t>(lw.curr_block);
     if ((ab_int + old_size) != curr_block_int) {
         /* allocated_block must be adjacent to the currently selected block */
         return;
@@ -294,40 +280,40 @@ list_walker::resize_allocated_block(const free_entry *const allocated_block, con
         /* Shrinking p */
         const unsigned size_diff = old_size - new_size;
         /* Copy values over using temp as intermediary */
-        free_entry temp(curr_block);
+        free_entry temp(*(lw.curr_block));
 
         free_entry *new_block = reinterpret_cast<free_entry *>(curr_block_int - size_diff);
-        new_block->copy_and_resize(&temp, temp.size - size_diff, links);
+        copy_and_resize(lw, *new_block, temp, temp.size - size_diff);
 
-        curr_block = new_block;
+        lw.curr_block = new_block;
     } else {
         /* Extending p */
         const unsigned size_diff = new_size - old_size;
-        if ((curr_block->size - size_diff) < MIN_ALLOC_SIZE) {
+        if ((lw.curr_block->size - size_diff) < MIN_ALLOC_SIZE) {
             /* Allocate all of curr_block */
-            allocate_entire_block();
+            allocate_entire_block(lw);
         } else {
             /* Copy data into temp to avoid overlap */
-            free_entry temp(curr_block);
+            free_entry temp(*(lw.curr_block));
 
             free_entry *new_block = reinterpret_cast<free_entry *>(curr_block_int + size_diff);
-            new_block->copy_and_resize(&temp, temp.size - size_diff, links);
+            copy_and_resize(lw, *new_block, temp, temp.size - size_diff);
 
-            curr_block = new_block;
+            lw.curr_block = new_block;
         }
     }
 }
 
 void
-list_walker::free(const size_t size)
+Skiplist::free_current(list_walker& lw, const size_t size)
 {
 }
 
-list_walker
-Skiplist::get_walker(const int skip_list)
+Skiplist::list_walker
+Skiplist::get_walker(const unsigned skip_list) const
 {
-    list_walker iter(skip_list, *this);
-    return iter;
+    list_walker lw(skip_list, *this);
+    return lw;
 }
 
 /* Start of allocable memory block (and size), maybe make this a macro? */
@@ -385,14 +371,14 @@ void *
 Skiplist::malloc(const size_t size) {
     const unsigned skip_list = which_skiplist_by_size(size);
 
-    list_walker iter = get_walker(skip_list);
+    list_walker lw = get_walker(skip_list);
 
-    while (iter.curr_block) {
-        if (iter.fits_size(size)) {
+    while (lw.curr_block) {
+        if (lw.fits_size(size)) {
             /* We can use this block of memory */
-            return iter.allocate(size);
+            return allocate_current(lw, size);
         }
-        iter.move_next();
+        lw.move_next();
     }
 
     /* Didn't find a valid spot */
@@ -400,102 +386,102 @@ Skiplist::malloc(const size_t size) {
 }
 
 void
-Skiplist::free(const size_t size, free_entry *const p)
+Skiplist::free(const size_t size, void *const pointer_to_free)
 {
-    const unsigned skip_list = which_skiplist_by_size(size);
+    free_entry *const p = static_cast<free_entry *>(pointer_to_free);
 
     /* Go through lowest skip list to make sure we don't skip our spot */
-    list_walker iter = get_walker(0);
+    list_walker lw = get_walker(0);
 
-    while (iter.curr_block && (iter.curr_block <= p)) {
-        iter.move_next();
+    while (lw.curr_block && (lw.curr_block <= p)) {
+        lw.move_next();
     }
 
     const uintptr_t p_int = reinterpret_cast<uintptr_t>(p);
-    const uintptr_t curr_block_int = reinterpret_cast<uintptr_t>(iter.curr_block);
-    if (iter.curr_block) {
+    const uintptr_t curr_block_int = reinterpret_cast<uintptr_t>(lw.curr_block);
+    if (lw.curr_block) {
         /* Freed memory block belongs just before traverse */
 
         /* Get pointer to block previous to p */
-        const uintptr_t prev_int = reinterpret_cast<uintptr_t>(links.lists[0]) - offsetof(free_entry, next);
+        const uintptr_t prev_int = reinterpret_cast<uintptr_t>(lw.links.lists[0]) - offsetof(free_entry, next);
         free_entry *prev = reinterpret_cast<free_entry *>(prev_int);
-        if ((prev + prev->size) == p_int) {
+        if ((prev_int + prev->size) == p_int) {
             /* Can coalesce freed block with previous block */
             const unsigned prev_skip_list = prev->skiplist();
             prev->size += size;
 
             if ((p_int + size) == curr_block_int) {
                 /* Can coalesce with next block */
-                prev->size += iter.curr_block->size;
-                const unsigned curr_block_skip_list = iter.curr_block->skiplist();
+                prev->size += lw.curr_block->size;
+                const unsigned curr_block_skip_list = lw.curr_block->skiplist();
                 const unsigned new_skip_list = prev->skiplist();
 
                 /* Update next pointers */
                 for (unsigned i = 0; i <= curr_block_skip_list; i++) {
-                    prev->next[i] = iter.curr_block->next[i];
+                    prev->next[i] = lw.curr_block->next[i];
                 }
 
                 for (unsigned i = (curr_block_skip_list + 1); i <= new_skip_list; i++) {
-                    prev->next[i] = *(links.lists[i]);
+                    prev->next[i] = *(lw.links.lists[i]);
                 }
 
                 /* Set previous entries to point to prev */
                 for (unsigned i = (prev_skip_list + 1); i <= new_skip_list; i++) {
-                    *(links.lists[i]) = prev;
+                    *(lw.links.lists[i]) = prev;
                 }
             } else {
                 const unsigned new_skip_list = prev->skiplist();
                 for (unsigned i = (prev_skip_list + 1); i <= new_skip_list; i++) {
-                    prev->next[i] = *(links.lists[i]);
-                    *(links.lists[i]) = prev;
+                    prev->next[i] = *(lw.links.lists[i]);
+                    *(lw.links.lists[i]) = prev;
                 }
             }
         } else {
             /* Can't coalesce, set values */
             p->size = size;
 
-            if ((p_int + size) == (uintptr_t)iter.curr_block) {
+            if ((p_int + size) == curr_block_int) {
                 /* Can coalesce with next block */
-                p->size += traverse->size;
-                const unsigned traverse_skip_list = which_skiplist_by_size(iter.curr_block->size);
+                p->size += lw.curr_block->size;
+                const unsigned traverse_skip_list = which_skiplist_by_size(lw.curr_block->size);
                 const unsigned new_skip_list = which_skiplist_by_size(p->size);
 
                 /* Update next pointers */
                 for (unsigned i = 0; i <= traverse_skip_list; i++) {
-                    p->next[i] = traverse->next[i];
+                    p->next[i] = lw.curr_block->next[i];
                 }
 
                 for (unsigned i = (traverse_skip_list + 1); i <= new_skip_list; i++) {
-                    p->next[i] = *(links.lists[i]);
+                    p->next[i] = *(lw.links.lists[i]);
                 }
 
                 /* Set previous entries to point to p */
                 for (unsigned i = 0; i <= new_skip_list; i++) {
-                    *(links.lists[i]) = p;
+                    *(lw.links.lists[i]) = p;
                 }
             } else {
                 /* Can't coalesce with any blocks, insert new one */
-                iter.create_new_block(p, size);
+                insert_new_block(lw, *p, size);
             }
         }
     } else {
         /* We got to the end of the list, so this block must belong on the end */
 
         /* Get pointer to block previous to p */
-        const uintptr_t prev_int = (uintptr_t)(*(links.lists[0]));
-        struct free_entry *prev = (void *)(prev_int - offsetof(struct free_entry, next));
+        const uintptr_t prev_int = reinterpret_cast<uintptr_t>(lw.links.lists[0]) - offsetof(free_entry, next);
+        free_entry *prev = reinterpret_cast<free_entry *>(prev_int);
         if ((((uintptr_t)prev) + size) == p_int) {
             /* Can coalesce with previous */
             prev->size += size;
         } else {
             /* Need to create new block */
-            iter.create_new_block(p, size);
+            insert_new_block(lw, *p, size);
         }
     }
 }
 
 void *
-Skiplist::resize(const size_t old_size, const size_t new_size, free_entry *const p)
+Skiplist::resize(const size_t old_size, const size_t new_size, void *const pointer_to_resize)
 {
     //TODO: this can be simplified a lot.
     // if (expanding) {
@@ -509,22 +495,23 @@ Skiplist::resize(const size_t old_size, const size_t new_size, free_entry *const
     //         p->size -= size_diff;
     //     }
     // }
+    free_entry *const p = static_cast<free_entry *>(pointer_to_resize);
     const unsigned old_skip_list = which_skiplist_by_size(old_size);
     const bool expanding = new_size > old_size;
 
-    list_walker iter = get_walker(old_skip_list);
+    list_walker lw = get_walker(old_skip_list);
 
     /* Find free block following p */
-    while (iter.curr_block && (iter.curr_block <= p)) {
-        iter.move_next();
+    while (lw.curr_block && (lw.curr_block <= p)) {
+        lw.move_next();
     }
 
     /* Memory block belongs just before traverse */
     const uintptr_t p_int = reinterpret_cast<uintptr_t>(p);
-    const uintptr_t curr_block_int = reinterpret_cast<uintptr_t>(iter.curr_block);
-    if ((iter.curr_block != nullptr) && ((p_int + old_size) == curr_block_int)) {
+    const uintptr_t curr_block_int = reinterpret_cast<uintptr_t>(lw.curr_block);
+    if ((lw.curr_block != nullptr) && ((p_int + old_size) == curr_block_int)) {
         /* Following block is free and is adjacent to p, extend/shrink p */
-        iter.resize_allocated_block(p, old_size, new_size);
+        resize_allocated_block(lw, p, old_size, new_size);
         return p;
     } else {
         /* Not connected, will need to create a new free_entry */
@@ -543,7 +530,7 @@ Skiplist::resize(const size_t old_size, const size_t new_size, free_entry *const
             const uintptr_t new_block_int = p_int + new_size;
             free_entry *new_block = reinterpret_cast<free_entry *>(new_block_int);
 
-            iter.create_new_block(new_block, size_diff);
+            insert_new_block(lw, *new_block, size_diff);
 
             return p;
         }
@@ -559,6 +546,7 @@ void
 alloc_init(void) {
     ALLOCABLE_MEM_SIZE = ((uintptr_t)&_DATA_RAM_START) + SRAM_SIZE - ((uintptr_t)&_ALLOCABLE_MEM);
 
+    /* TODO: put this in mem_mgr
     free_entry *entry = reinterpret_cast<free_entry *>(ALLOCABLE_MEM_START);
     entry->size = ALLOCABLE_MEM_SIZE;
 
@@ -566,6 +554,7 @@ alloc_init(void) {
         free_list_start.heads[i] = entry;
         entry->next[i] = nullptr;
     }
+    */
 }
 
 void *
@@ -631,7 +620,7 @@ _free(void *const p) {
     size_t *const q = reinterpret_cast<size_t *>(p_int - MALLOC_HEADER_SIZE);
     const size_t size = q[0];
 
-    free_list_start.free(size, reinterpret_cast<free_entry *>(q));
+    free_list_start.free(size, static_cast<void *>(q));
 }
 
 void *
@@ -656,7 +645,7 @@ _realloc(const size_t req_size, void *const p) {
         return p;
     }
     /* Actual realloc */
-    size_t *ret = static_cast<size_t *>(free_list_start.resize(old_size, new_size, reinterpret_cast<free_entry *>(q)));
+    size_t *ret = static_cast<size_t *>(free_list_start.resize(old_size, new_size, static_cast<void *>(q)));
     if (ret == nullptr) {
         /* Need to allocate new block */
         ret = static_cast<size_t *>(free_list_start.malloc(new_size));
@@ -684,7 +673,7 @@ _realloc(const size_t req_size, void *const p) {
         }
 
         /* Free old mem */
-        free_list_start.free(old_size, reinterpret_cast<free_entry *>(q));
+        free_list_start.free(old_size, static_cast<void *>(q));
 
         return static_cast<void *>(r);
     }
