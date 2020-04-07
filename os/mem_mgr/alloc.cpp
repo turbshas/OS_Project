@@ -103,7 +103,10 @@ class Skiplist {
 
         void allocate_entire_block(list_walker& lw);
         void *allocate_current(list_walker& lw, const size_t size);
+
         void insert_new_block(list_walker& lw, free_entry& new_block, const size_t size);
+
+        void insert_and_coalesce_with_current(list_walker& lw, free_entry& entry, const size_t size);
         void free_current(list_walker& lw, const size_t size);
 
         void copy_and_resize(list_walker& lw, free_entry& dest, const free_entry& src, const size_t new_size);
@@ -162,6 +165,31 @@ Skiplist::list_walker::advance_links()
             links.lists[i] = &next_entry->next[i];
         }
     }
+}
+
+void
+Skiplist::insert_and_coalesce_with_current(list_walker& lw, free_entry& entry, const size_t size)
+{
+    entry.size = size + lw.curr_block->size;
+    const unsigned curr_block_skiplist = lw.curr_block->skiplist();
+    const unsigned new_skiplist = entry.skiplist();
+
+    /* Update next pointers:
+     *   - Need to copy the next pointers the curr_block had
+     *   - For the other next pointers, copy the pointers from the links
+     *   - Update links to point to entry up to its skiplist
+     */
+    for (unsigned i = 0; i <= curr_block_skiplist; i++) {
+        entry.next[i] = lw.curr_block->next[i];
+        *(lw.links.lists[i]) = &entry;
+    }
+
+    for (unsigned i = (curr_block_skiplist + 1); i <= new_skiplist; i++) {
+        entry.next[i] = *(lw.links.lists[i]);
+        *(lw.links.lists[i]) = &entry;
+    }
+
+    lw.curr_block = &entry;
 }
 
 void
@@ -397,20 +425,22 @@ Skiplist::free(const size_t size, void *const pointer_to_free)
         lw.move_next();
     }
 
+    /* Get pointer to block previous to p */
+    const uintptr_t prev_int = reinterpret_cast<uintptr_t>(lw.links.lists[0]) - offsetof(free_entry, next);
+    free_entry *const prev = reinterpret_cast<free_entry *>(prev_int);
+    /* uint versions of pointers for comparisons */
     const uintptr_t p_int = reinterpret_cast<uintptr_t>(p);
     const uintptr_t curr_block_int = reinterpret_cast<uintptr_t>(lw.curr_block);
-    if (lw.curr_block) {
-        /* Freed memory block belongs just before traverse */
 
-        /* Get pointer to block previous to p */
-        const uintptr_t prev_int = reinterpret_cast<uintptr_t>(lw.links.lists[0]) - offsetof(free_entry, next);
-        free_entry *prev = reinterpret_cast<free_entry *>(prev_int);
+    if (lw.curr_block != nullptr) {
+        /* Freed memory block belongs just before curr_block */
+
         if ((prev_int + prev->size) == p_int) {
             /* Can coalesce freed block with previous block */
-            const unsigned prev_skip_list = prev->skiplist();
-            prev->size += size;
 
             if ((p_int + size) == curr_block_int) {
+                const unsigned prev_skip_list = prev->skiplist();
+                prev->size += size;
                 /* Can coalesce with next block */
                 prev->size += lw.curr_block->size;
                 const unsigned curr_block_skip_list = lw.curr_block->skiplist();
@@ -430,35 +460,14 @@ Skiplist::free(const size_t size, void *const pointer_to_free)
                     *(lw.links.lists[i]) = prev;
                 }
             } else {
-                const unsigned new_skip_list = prev->skiplist();
-                for (unsigned i = (prev_skip_list + 1); i <= new_skip_list; i++) {
-                    prev->next[i] = *(lw.links.lists[i]);
-                    *(lw.links.lists[i]) = prev;
-                }
+                /* Expand previous to fill the space */
+                expand_entry(lw, *prev, size);
             }
         } else {
-            /* Can't coalesce, set values */
-            p->size = size;
-
+            /* Can't coalesce with previous, set values */
             if ((p_int + size) == curr_block_int) {
                 /* Can coalesce with next block */
-                p->size += lw.curr_block->size;
-                const unsigned traverse_skip_list = which_skiplist_by_size(lw.curr_block->size);
-                const unsigned new_skip_list = which_skiplist_by_size(p->size);
-
-                /* Update next pointers */
-                for (unsigned i = 0; i <= traverse_skip_list; i++) {
-                    p->next[i] = lw.curr_block->next[i];
-                }
-
-                for (unsigned i = (traverse_skip_list + 1); i <= new_skip_list; i++) {
-                    p->next[i] = *(lw.links.lists[i]);
-                }
-
-                /* Set previous entries to point to p */
-                for (unsigned i = 0; i <= new_skip_list; i++) {
-                    *(lw.links.lists[i]) = p;
-                }
+                insert_and_coalesce_with_current(lw, *p, size);
             } else {
                 /* Can't coalesce with any blocks, insert new one */
                 insert_new_block(lw, *p, size);
@@ -466,13 +475,9 @@ Skiplist::free(const size_t size, void *const pointer_to_free)
         }
     } else {
         /* We got to the end of the list, so this block must belong on the end */
-
-        /* Get pointer to block previous to p */
-        const uintptr_t prev_int = reinterpret_cast<uintptr_t>(lw.links.lists[0]) - offsetof(free_entry, next);
-        free_entry *prev = reinterpret_cast<free_entry *>(prev_int);
-        if ((((uintptr_t)prev) + size) == p_int) {
+        if ((prev_int + size) == p_int) {
             /* Can coalesce with previous */
-            prev->size += size;
+            expand_entry(lw, *prev, size);
         } else {
             /* Need to create new block */
             insert_new_block(lw, *p, size);
