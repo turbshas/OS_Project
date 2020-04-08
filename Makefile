@@ -16,7 +16,8 @@ include $(patsubst %,%/Makefile, $(MODULES))
 
 # Rules for building
 OBJ_FILES := $(patsubst %.$(SRC_FILE_EXTENSION),build/%.o,$(SRC_FILES))
-DEP_FILES := $(OBJ_FILES:.o=.dep)
+DEP_FILE_EXTENSION := d
+DEP_FILES := $(OBJ_FILES:.o=.$(DEP_FILE_EXTENSION))
 
 # CC := arm-none-eabi-gcc
 CC := arm-none-eabi-g++
@@ -31,6 +32,7 @@ LINKER_FLAGS:=\
     --specs=nosys.specs
 
 COMPILE_FLAGS:=\
+	-std=c++17 \
     -O0 \
     -g \
     -Wall \

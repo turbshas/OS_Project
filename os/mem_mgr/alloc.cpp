@@ -1,6 +1,101 @@
 #include "alloc.h"
 #include "mem_mgr.h"
 /*
+ * Planned interface:
+ *  1) ker_malloc:
+ *    - params: size of memory
+ *    - traverse free list until past start
+ *    - find first free entry of sufficient size to allocate request
+ *    - if exact match or leftover would be too small: allocate entire entry
+ *    - else fragment entry, allocate first chunk
+ *    - previous entries need to be updated to point to correct next entry
+ *      - use 2 list_links objects, 1 behind the other
+ *  2) ker_calloc:
+ *    - params: size of memory
+ *    - calls ker_malloc, zeroes out memory
+ *  3) ker_realloc:
+ *    - params: old size of memory, new size of memory, old pointer
+ *    - if there is a block directly next to old one (and it fits), expand it
+ *    - else, allocate new block, copy data over, and free old block
+ *  4) ker_free:
+ *    - params: size, pointer
+ *    - find spot where block should go in free list
+ *    - if contiguous with next block, merge with next block
+ *    - if contiguous with previous block, merge with previous
+ *    - else, make it a new block and insert into list, update pointers
+ *
+ * Notes:
+ *  - Need minimum alloc size (size of size_t + size of void *) - in this case, 8 B
+ *  - For processes allocating memory, may need functions that allocate requested
+ *    size + header size, and the header stores the size of the memory allocated
+ *    for convenient freeing by process (free would only need the pointer)
+ *      - Allocates size + MALLOC_HEADER_SIZE, stores the allocated size in the 4 B
+ *        preceding the returned pointer
+ *  - May need similar thing for realloc - inner function accepts old memory size
+ *    as well as new memory size
+ *  - Start location of allocable memory will be communicated by the linker script
+ *    (by communicating end of memory used in the OS binary) and size will be
+ *    computed from this
+ * TODO: make sure allocated blocks are multiples of 4 B for alignment and also
+ * that freed pointers are aligned correctly (and realloc'd ones too)
+ */
+
+/* TODO: The way I expect locking to work:
+ * 1) Skiplist locks itself on entry to malloc/realloc/free
+ * 2) If it needs more memory, unlock and get memory from mem_mgr
+ * 3) Call free on the new memory
+ * 4) Call malloc again and return whatever is returned
+ *
+ * TODO: add allocator func to SKiplist
+ */
+
+/* TODO: refactors to this:
+ * A lot of the helpers are gross and can be redone as combinations
+ * of smaller functions. Changes I could make:
+ *
+ * allocate_entire_block: probably fine
+ * allocate_current: probably fine
+ * insert_new_block: maybe fine?
+ *
+ * insert_and_coalesce_with_current:
+ *   - Shift curr_block backwards
+ *   - Expand curr_block
+ *
+ * insert_and_coalesce_with_prev_and_current:
+ *   - 2 options:
+ *     1)
+ *       - Expand prev
+ *       - Merge prev with curr_block, where merge does:
+ *         - Copies curr_block's next pointers
+ *         - Expands prev
+ *         - Updates links due to expansion
+ *     2)
+ *       - "Allocate" curr_block (have the next pointers skip over it)
+ *       - Expand prev to cover freed block and curr_block
+ *
+ * expand_entry: probably fine
+ * shrink_entry: probably fine
+ *
+ * copy_and_resize:
+ *   - For expanding:
+ *     - Shift passed in block backwards
+ *     - Expand passed in block
+ *   - For shrinking:
+ *     - Shrink passed in block
+ *     - Shift passed in block forwards
+ *
+ * resize_allocated_block:
+ *   - For expanding:
+ *     - Shrink following free block
+ *     - Shift forward following free block
+ *     - Return passed in pointer
+ *   - For shrinking:
+ *     - Shift backward following free block
+ *     - Expand following free block
+ *     - Return passed in pointer
+ */
+
+/*
  * For memoy allocation, a skip list will be used with 4 different free lists:
  * 0 B, 16 B, 64 B, and 1024 B
  *
@@ -22,7 +117,7 @@
 
 #define SRAM_SIZE (128 * 1024)
 #define NUM_FREE_LISTS 4u
-#define MIN_ALLOC_SIZE 8u
+#define MIN_ALLOC_SIZE (sizeof(size_t) + sizeof(free_entry *))
 
 #define MALLOC_HEADER_SIZE (2 * sizeof(size_t))
 #define ALIGNMENT (sizeof(size_t))
@@ -33,7 +128,6 @@
 extern unsigned int _ALLOCABLE_MEM;
 extern unsigned int _DATA_RAM_START;
 
-//TODO: can do this with a lookup table?
 static unsigned
 which_skiplist_by_size(const size_t size) {
     if (size >= 1024) {
@@ -101,21 +195,22 @@ class Skiplist {
 
         list_walker get_walker(const unsigned skip_list) const;
 
+        /* Helpers for malloc */
         void allocate_entire_block(list_walker& lw);
         void *allocate_current(list_walker& lw, const size_t size);
 
+        /* Helpers for free */
         void insert_new_block(list_walker& lw, free_entry& new_block, const size_t size);
-
         void insert_and_coalesce_with_current(list_walker& lw, free_entry& entry, const size_t size);
-        void free_current(list_walker& lw, const size_t size);
-
-        void copy_and_resize(list_walker& lw, free_entry& dest, const free_entry& src, const size_t new_size);
+        void insert_and_coalesce_with_prev_and_current(list_walker& lw, const size_t size, free_entry& prev);
         void expand_entry(list_walker& lw, free_entry& entry, const size_t expand_amt);
-        void shrink_entry(list_walker& lw, free_entry& entry, const size_t shrink_amt);
 
+        /* Helpers for realloc */
+        void copy_and_resize(list_walker& lw, free_entry& dest, const free_entry& src, const size_t new_size);
         void resize_allocated_block(list_walker& lw, const free_entry *const allocated_block, const size_t old_size, const size_t new_size);
 
-        /* TODO: clean these function up */
+        /* Unused - delete? */
+        void shrink_entry(list_walker& lw, free_entry& entry, const size_t shrink_amt);
 };
 
 Skiplist::free_entry::free_entry(const free_entry& fe)
@@ -167,64 +262,11 @@ Skiplist::list_walker::advance_links()
     }
 }
 
-void
-Skiplist::insert_and_coalesce_with_current(list_walker& lw, free_entry& entry, const size_t size)
+Skiplist::list_walker
+Skiplist::get_walker(const unsigned skip_list) const
 {
-    entry.size = size + lw.curr_block->size;
-    const unsigned curr_block_skiplist = lw.curr_block->skiplist();
-    const unsigned new_skiplist = entry.skiplist();
-
-    /* Update next pointers:
-     *   - Need to copy the next pointers the curr_block had
-     *   - For the other next pointers, copy the pointers from the links
-     *   - Update links to point to entry up to its skiplist
-     */
-    for (unsigned i = 0; i <= curr_block_skiplist; i++) {
-        entry.next[i] = lw.curr_block->next[i];
-        *(lw.links.lists[i]) = &entry;
-    }
-
-    for (unsigned i = (curr_block_skiplist + 1); i <= new_skiplist; i++) {
-        entry.next[i] = *(lw.links.lists[i]);
-        *(lw.links.lists[i]) = &entry;
-    }
-
-    lw.curr_block = &entry;
-}
-
-void
-Skiplist::expand_entry(list_walker& lw, free_entry& entry, const size_t expand_amt)
-{
-    const unsigned old_skiplist = entry.skiplist();
-    entry.size += expand_amt;
-    const unsigned new_skiplist = entry.skiplist();
-
-    for (unsigned i = (old_skiplist + 1); i <= new_skiplist; i++) {
-        entry.next[i] = *(lw.links.lists[i]);
-        *(lw.links.lists[i]) = &entry;
-    }
-}
-
-void
-Skiplist::shrink_entry(list_walker& lw, free_entry& entry, const size_t shrink_amt)
-{
-    const unsigned old_skiplist = entry.skiplist();
-    entry.size -= shrink_amt;
-    const unsigned new_skiplist = entry.skiplist();
-
-    for (unsigned i = (new_skiplist + 1); i <= old_skiplist; i++) {
-        *(lw.links.lists[i]) = entry.next[i];
-    }
-}
-
-void
-Skiplist::insert_new_block(list_walker& lw, free_entry& new_block, const size_t size)
-{
-    new_block.size = size;
-    for (unsigned i = 0; i <= new_block.skiplist(); i++) {
-        new_block.next[i] = *(lw.links.lists[i]);
-        *(lw.links.lists[i]) = &new_block;
-    }
+    list_walker lw(skip_list, *this);
+    return lw;
 }
 
 void
@@ -259,6 +301,92 @@ Skiplist::allocate_current(list_walker& lw, const size_t size)
     }
 
     return lw.curr_block;
+}
+
+void
+Skiplist::insert_new_block(list_walker& lw, free_entry& new_block, const size_t size)
+{
+    new_block.size = size;
+    for (unsigned i = 0; i <= new_block.skiplist(); i++) {
+        new_block.next[i] = *(lw.links.lists[i]);
+        *(lw.links.lists[i]) = &new_block;
+    }
+}
+
+void
+Skiplist::insert_and_coalesce_with_current(list_walker& lw, free_entry& entry, const size_t size)
+{
+    entry.size = size + lw.curr_block->size;
+    const unsigned curr_block_skiplist = lw.curr_block->skiplist();
+    const unsigned new_skiplist = entry.skiplist();
+
+    /* Update next pointers:
+     *   - Need to copy the next pointers the curr_block had
+     *   - For the other next pointers, copy the pointers from the links
+     *   - Update links to point to entry up to its skiplist
+     */
+    for (unsigned i = 0; i <= curr_block_skiplist; i++) {
+        entry.next[i] = lw.curr_block->next[i];
+        *(lw.links.lists[i]) = &entry;
+    }
+
+    for (unsigned i = (curr_block_skiplist + 1); i <= new_skiplist; i++) {
+        entry.next[i] = *(lw.links.lists[i]);
+        *(lw.links.lists[i]) = &entry;
+    }
+
+    lw.curr_block = &entry;
+}
+
+void
+Skiplist::insert_and_coalesce_with_prev_and_current(list_walker& lw, const size_t size, free_entry& prev)
+{
+    const unsigned prev_skiplist = prev.skiplist();
+    prev.size += size + lw.curr_block->size;
+    const unsigned curr_block_skiplist = lw.curr_block->skiplist();
+    const unsigned new_skiplist = prev.skiplist();
+
+    /* Update next pointers:
+     *   - Copy all next pointers from curr_block (curr_block is at highest address)
+     *   - For the rest, copy from the links
+     *   - Update links to point to prev now that prev's skiplist has changed
+     */
+    for (unsigned i = 0; i <= curr_block_skiplist; i++) {
+        prev.next[i] = lw.curr_block->next[i];
+    }
+    for (unsigned i = (curr_block_skiplist + 1); i <= new_skiplist; i++) {
+        prev.next[i] = *(lw.links.lists[i]);
+    }
+    for (unsigned i = (prev_skiplist + 1); i <= new_skiplist; i++) {
+        *(lw.links.lists[i]) = &prev;
+    }
+
+    lw.curr_block = &prev;
+}
+
+void
+Skiplist::expand_entry(list_walker& lw, free_entry& entry, const size_t expand_amt)
+{
+    const unsigned old_skiplist = entry.skiplist();
+    entry.size += expand_amt;
+    const unsigned new_skiplist = entry.skiplist();
+
+    for (unsigned i = (old_skiplist + 1); i <= new_skiplist; i++) {
+        entry.next[i] = *(lw.links.lists[i]);
+        *(lw.links.lists[i]) = &entry;
+    }
+}
+
+void
+Skiplist::shrink_entry(list_walker& lw, free_entry& entry, const size_t shrink_amt)
+{
+    const unsigned old_skiplist = entry.skiplist();
+    entry.size -= shrink_amt;
+    const unsigned new_skiplist = entry.skiplist();
+
+    for (unsigned i = (new_skiplist + 1); i <= old_skiplist; i++) {
+        *(lw.links.lists[i]) = entry.next[i];
+    }
 }
 
 void
@@ -311,7 +439,7 @@ Skiplist::resize_allocated_block(list_walker& lw, const free_entry *const alloca
         free_entry temp(*(lw.curr_block));
 
         free_entry *new_block = reinterpret_cast<free_entry *>(curr_block_int - size_diff);
-        copy_and_resize(lw, *new_block, temp, temp.size - size_diff);
+        copy_and_resize(lw, *new_block, temp, temp.size + size_diff);
 
         lw.curr_block = new_block;
     } else {
@@ -331,65 +459,6 @@ Skiplist::resize_allocated_block(list_walker& lw, const free_entry *const alloca
         }
     }
 }
-
-void
-Skiplist::free_current(list_walker& lw, const size_t size)
-{
-}
-
-Skiplist::list_walker
-Skiplist::get_walker(const unsigned skip_list) const
-{
-    list_walker lw(skip_list, *this);
-    return lw;
-}
-
-/* Start of allocable memory block (and size), maybe make this a macro? */
-static void *const ALLOCABLE_MEM_START = &_ALLOCABLE_MEM;
-static size_t ALLOCABLE_MEM_SIZE;
-
-/* Entry point for each skip list */
-static Skiplist free_list_start;
-
-/*
- * Planned interface:
- *  1) ker_malloc:
- *    - params: size of memory
- *    - traverse free list until past start
- *    - find first free entry of sufficient size to allocate request
- *    - if exact match or leftover would be too small: allocate entire entry
- *    - else fragment entry, allocate first chunk
- *    - previous entries need to be updated to point to correct next entry
- *      - use 2 list_links objects, 1 behind the other
- *  2) ker_calloc:
- *    - params: size of memory
- *    - calls ker_malloc, zeroes out memory
- *  3) ker_realloc:
- *    - params: old size of memory, new size of memory, old pointer
- *    - if there is a block directly next to old one (and it fits), expand it
- *    - else, allocate new block, copy data over, and free old block
- *  4) ker_free:
- *    - params: size, pointer
- *    - find spot where block should go in free list
- *    - if contiguous with next block, merge with next block
- *    - if contiguous with previous block, merge with previous
- *    - else, make it a new block and insert into list, update pointers
- *
- * Notes:
- *  - Need minimum alloc size (size of size_t + size of void *) - in this case, 8 B
- *  - For processes allocating memory, may need functions that allocate requested
- *    size + header size, and the header stores the size of the memory allocated
- *    for convenient freeing by process (free would only need the pointer)
- *      - Allocates size + MALLOC_HEADER_SIZE, stores the allocated size in the 4 B
- *        preceding the returned pointer
- *  - May need similar thing for realloc - inner function accepts old memory size
- *    as well as new memory size
- *  - Start location of allocable memory will be communicated by the linker script
- *    (by communicating end of memory used in the OS binary) and size will be
- *    computed from this
- * TODO: make sure allocated blocks are multiples of 4 B for alignment and also
- * that freed pointers are aligned correctly (and realloc'd ones too)
- */
 
 /*
  * The ker_* functions expect proper input values, should only be called
@@ -439,26 +508,8 @@ Skiplist::free(const size_t size, void *const pointer_to_free)
             /* Can coalesce freed block with previous block */
 
             if ((p_int + size) == curr_block_int) {
-                const unsigned prev_skip_list = prev->skiplist();
-                prev->size += size;
                 /* Can coalesce with next block */
-                prev->size += lw.curr_block->size;
-                const unsigned curr_block_skip_list = lw.curr_block->skiplist();
-                const unsigned new_skip_list = prev->skiplist();
-
-                /* Update next pointers */
-                for (unsigned i = 0; i <= curr_block_skip_list; i++) {
-                    prev->next[i] = lw.curr_block->next[i];
-                }
-
-                for (unsigned i = (curr_block_skip_list + 1); i <= new_skip_list; i++) {
-                    prev->next[i] = *(lw.links.lists[i]);
-                }
-
-                /* Set previous entries to point to prev */
-                for (unsigned i = (prev_skip_list + 1); i <= new_skip_list; i++) {
-                    *(lw.links.lists[i]) = prev;
-                }
+                insert_and_coalesce_with_prev_and_current(lw, size, *prev);
             } else {
                 /* Expand previous to fill the space */
                 expand_entry(lw, *prev, size);
@@ -544,6 +595,14 @@ Skiplist::resize(const size_t old_size, const size_t new_size, void *const point
     return nullptr;
 }
 
+/* Start of allocable memory block (and size), maybe make this a macro? */
+/* TODO: move this to mem_mgr, Skiplist should allocate chunks of memory from there */
+static void *const ALLOCABLE_MEM_START = &_ALLOCABLE_MEM;
+static size_t ALLOCABLE_MEM_SIZE;
+
+/* Entry point for each skip list */
+static Skiplist free_list_start;
+
 /* Initializes structures required for allocator to work */
 //TODO: this list will be used for heap allocations and will need memory to be allocated from mem_mgr before use
 //TODO: move ALLOCABLE_MEM_SIZE to mem_mgr
@@ -562,6 +621,8 @@ alloc_init(void) {
     */
 }
 
+/* TODO: new and new[] operators */
+
 void *
 _malloc(const size_t req_size) {
     if (req_size == 0) {
@@ -574,21 +635,6 @@ _malloc(const size_t req_size) {
     p[0] = size;
     const uintptr_t p_int = reinterpret_cast<uintptr_t>(p);
     return reinterpret_cast<void *>(p_int + MALLOC_HEADER_SIZE);
-    /* The way I expect locking to work:
-     * 1) lock
-     * 2) ker_malloc()
-     * 3) unlock
-     * 4) If p == NULL:
-     *     a) allocate more memory to heap
-     *     b) lock
-     *     c) ker_free() on newly allocated memory
-     *     d) unlock
-     *     e) lock
-     *     f) ker_malloc()
-     *     g) unlock
-     *     h) if p == NULL return NULL else return p
-     * 5) Else return p
-     */
 }
 
 void *
