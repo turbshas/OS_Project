@@ -47,13 +47,14 @@ pwr_driver:
 
 mem_mgr:
  - Handle dynamic allocation
- - Skiplist
- - In alloc.c, should allocate pool of memory from mem_mgr and use that for the skiplist
+ - new operators in alloc.cpp
+ - locking in alloc.cpp
  - Handle large allocations e.g. for process creations
  - Handle MPU regions I guess?
 
 flash_mgr:
  - Handle dynamic allocation of flash memory
+ - some kind of file system
 
 process_mgr:
  - No idea yet
@@ -67,6 +68,7 @@ path_mgr:
 
 rsrc_mgr:
  - Managing hardware resources (ADC, USB, GPIO, CRC, etc.)
+ - Might be handled by their respective drivers
 
 system calls:
  - SVCallHandler needs to read immediate from PC and call necessary kernel function
@@ -81,4 +83,8 @@ OS/kernel init:
 
 Misc:
  - Log function that serves as printf: formats and writes to usart
+
+Makefile/build system:
+ - Support to include/exclude certain parts of OS
+ - Support for other platforms
 

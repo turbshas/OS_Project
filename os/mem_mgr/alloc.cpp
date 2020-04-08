@@ -46,7 +46,7 @@
  * 3) Call free on the new memory
  * 4) Call malloc again and return whatever is returned
  *
- * TODO: add allocator func to SKiplist
+ * TODO: add allocator func to Skiplist
  */
 
 /* TODO: refactors to this:
@@ -115,7 +115,6 @@
  *         |______|   |_______|   |______|   |______|   |______|   |______|
  */
 
-#define SRAM_SIZE (128 * 1024)
 #define NUM_FREE_LISTS 4u
 #define MIN_ALLOC_SIZE (sizeof(size_t) + sizeof(free_entry *))
 
@@ -123,13 +122,19 @@
 #define ALIGNMENT (sizeof(size_t))
 #define ALIGNMENT_MASK (ALIGNMENT - 1u)
 #define UNALIGNED(p) (((uintptr_t)p) & ALIGNMENT_MASK)
-#define ROUND_UP_TO_ALIGN(size) ((((size) - 1u) & ~ALIGNMENT_MASK) + ALIGNMENT)
 
-extern unsigned int _ALLOCABLE_MEM;
-extern unsigned int _DATA_RAM_START;
+#define MIN_BLOCK_ALLOC_SIZE (2 * 1024)
+
+static size_t
+round_up_to_mult(const size_t value, const size_t mult_of)
+{
+    const size_t round_down = (value - 1u) & (~mult_of);
+    return round_down + mult_of;
+}
 
 static unsigned
-which_skiplist_by_size(const size_t size) {
+which_skiplist_by_size(const size_t size)
+{
     if (size >= 1024) {
         return 3;
     } else if (size >= 64) {
@@ -143,6 +148,7 @@ which_skiplist_by_size(const size_t size) {
 
 class Skiplist {
     public:
+        Skiplist(void *(*const alloc_func)(const size_t size));
         void *malloc(const size_t size);
         void *resize(const size_t old_size, const size_t new_size, void *const p);
         void free(const size_t size, void *const p);
@@ -192,6 +198,7 @@ class Skiplist {
         size_t total_mem;
         size_t total_free;
         free_entry *heads[NUM_FREE_LISTS];
+        void *(*block_alloc_func)(const size_t size);
 
         list_walker get_walker(const unsigned skip_list) const;
 
@@ -259,6 +266,16 @@ Skiplist::list_walker::advance_links()
             struct free_entry *next_entry = *(links.lists[i]);
             links.lists[i] = &next_entry->next[i];
         }
+    }
+}
+
+Skiplist::Skiplist(void *(*const alloc_func)(const size_t size))
+    : total_mem(0),
+      total_free(0),
+      block_alloc_func(alloc_func)
+{
+    for (unsigned i = 0; i < NUM_FREE_LISTS; i++) {
+        heads[i] = nullptr;
     }
 }
 
@@ -479,7 +496,15 @@ Skiplist::malloc(const size_t size) {
     }
 
     /* Didn't find a valid spot */
-    return nullptr;
+    const size_t block_alloc_amt = round_up_to_mult(size, MIN_BLOCK_ALLOC_SIZE);
+    void *const new_mem_block = block_alloc_func(block_alloc_amt);
+    if (new_mem_block == nullptr) {
+        /* Out of memory */
+        return nullptr;
+    }
+
+    free(block_alloc_amt, new_mem_block);
+    return malloc(size);
 }
 
 void
@@ -539,18 +564,6 @@ Skiplist::free(const size_t size, void *const pointer_to_free)
 void *
 Skiplist::resize(const size_t old_size, const size_t new_size, void *const pointer_to_resize)
 {
-    //TODO: this can be simplified a lot.
-    // if (expanding) {
-    //     new_p = malloc(new_size);
-    //     copy_data();
-    //     return new_p;
-    // } else {
-    //     if (size_diff < MIN_ALLOC_SIZE) return p;
-    //     else {
-    //         free(p + size_diff, size_diff);
-    //         p->size -= size_diff;
-    //     }
-    // }
     free_entry *const p = static_cast<free_entry *>(pointer_to_resize);
     const unsigned old_skip_list = which_skiplist_by_size(old_size);
     const bool expanding = new_size > old_size;
@@ -595,30 +608,14 @@ Skiplist::resize(const size_t old_size, const size_t new_size, void *const point
     return nullptr;
 }
 
-/* Start of allocable memory block (and size), maybe make this a macro? */
-/* TODO: move this to mem_mgr, Skiplist should allocate chunks of memory from there */
-static void *const ALLOCABLE_MEM_START = &_ALLOCABLE_MEM;
-static size_t ALLOCABLE_MEM_SIZE;
-
 /* Entry point for each skip list */
-static Skiplist free_list_start;
+static Skiplist free_list_start(nullptr);
 
 /* Initializes structures required for allocator to work */
-//TODO: this list will be used for heap allocations and will need memory to be allocated from mem_mgr before use
-//TODO: move ALLOCABLE_MEM_SIZE to mem_mgr
+//TODO: skiplist needs an allocation function from mem_mgr to get blocks of mem
 void
 alloc_init(void) {
-    ALLOCABLE_MEM_SIZE = ((uintptr_t)&_DATA_RAM_START) + SRAM_SIZE - ((uintptr_t)&_ALLOCABLE_MEM);
-
-    /* TODO: put this in mem_mgr
-    free_entry *entry = reinterpret_cast<free_entry *>(ALLOCABLE_MEM_START);
-    entry->size = ALLOCABLE_MEM_SIZE;
-
-    for (unsigned i = 0; i < NUM_FREE_LISTS; i++) {
-        free_list_start.heads[i] = entry;
-        entry->next[i] = nullptr;
-    }
-    */
+    free_list_start = Skiplist(nullptr);
 }
 
 /* TODO: new and new[] operators */
@@ -629,7 +626,7 @@ _malloc(const size_t req_size) {
         return NULL;
     }
 
-    const size_t size = ROUND_UP_TO_ALIGN(req_size) + MALLOC_HEADER_SIZE;
+    const size_t size = round_up_to_mult(req_size, ALIGNMENT) + MALLOC_HEADER_SIZE;
 
     size_t *p = static_cast<size_t *>(free_list_start.malloc(size));
     p[0] = size;
@@ -643,7 +640,7 @@ _calloc(const size_t req_size) {
         return NULL;
     }
 
-    const size_t size = ROUND_UP_TO_ALIGN(req_size) + MALLOC_HEADER_SIZE;
+    const size_t size = round_up_to_mult(req_size, ALIGNMENT) + MALLOC_HEADER_SIZE;
 
     size_t *p = static_cast<size_t *>(free_list_start.malloc(size));
     if (p == nullptr) {
@@ -690,7 +687,8 @@ _realloc(const size_t req_size, void *const p) {
     const uintptr_t p_int = reinterpret_cast<uintptr_t>(p);
     size_t *const q = reinterpret_cast<size_t *>(p_int - MALLOC_HEADER_SIZE);
     const size_t old_size = q[0];
-    const size_t new_size = ROUND_UP_TO_ALIGN(req_size) + MALLOC_HEADER_SIZE;
+
+    const size_t new_size = round_up_to_mult(req_size, ALIGNMENT) + MALLOC_HEADER_SIZE;
     if (new_size == old_size) {
         /* Same size requested, do nothing */
         return p;
