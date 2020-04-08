@@ -47,8 +47,6 @@ pwr_driver:
 
 mem_mgr:
  - Handle dynamic allocation
- - new operators in alloc.cpp
- - locking in alloc.cpp
  - Handle large allocations e.g. for process creations
  - Handle MPU regions I guess?
 
@@ -87,4 +85,7 @@ Misc:
 Makefile/build system:
  - Support to include/exclude certain parts of OS
  - Support for other platforms
+   - Move linker script into cpu/platform folder
+   - Create cpu.h or platform.h to contain cpu- or platform-specific info
+
 

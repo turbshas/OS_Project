@@ -220,7 +220,9 @@ main(void)
     alloc_init();
     void *p = _malloc(64);
     void *p2 = _malloc(64);
+    int *p3 = new int[6];
     _free(p);
+    delete[] p3;
     _free(p2);
 
     for ( ;; ) {}

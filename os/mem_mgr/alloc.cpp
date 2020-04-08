@@ -1,3 +1,5 @@
+#include <new>
+
 #include "alloc.h"
 #include "mem_mgr.h"
 /*
@@ -728,5 +730,43 @@ _realloc(const size_t req_size, void *const p) {
     }
 
     return ret;
+}
+
+void *operator new(size_t size)
+{
+    void *p = _malloc(size);
+    if (p == nullptr) {
+        throw std::bad_alloc{};
+    }
+    return p;
+}
+
+void *operator new[](size_t size)
+{
+    void *p = _malloc(size);
+    if (p == nullptr) {
+        throw std::bad_alloc{};
+    }
+    return p;
+}
+
+void operator delete(void *p) noexcept
+{
+    _free(p);
+}
+
+void operator delete[](void *p) noexcept
+{
+    _free(p);
+}
+
+void operator delete(void *p, const size_t) noexcept
+{
+    _free(p);
+}
+
+void operator delete[](void *p, const size_t) noexcept
+{
+    _free(p);
 }
 
