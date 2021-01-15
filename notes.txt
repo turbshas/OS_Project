@@ -1,0 +1,16 @@
+- Need way to prevent other cores active in the kernel from accessing critical sections
+  - Atomic operations with polling? Shouldn't have to wait long
+  - Should also disable interrupts?
+- memory management:
+  - can get memory areas from linker script
+  - can also get size of OS code from linker script
+  - give 4k at a time to skiplist?
+- Need to figure out setup steps for OS
+  - initialize OS data structures
+  - what to do after that?
+- Need system call interface
+  - system call instruction with number corresponding to function to call?
+  - What system calls are needed?
+  - Might need a wrapper function around some system calls that locks kernel?
+  - Should be separate area of OS, single file to contain sys call lookup table
+
