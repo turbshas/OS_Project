@@ -55,7 +55,7 @@ extern unsigned int _BSS_END;
 
 int main(void);
 
-__attribute__((noreturn, noinline, interrupt))
+__attribute__((noreturn, noinline))
 static void
 Default_Handler(int num)
 {

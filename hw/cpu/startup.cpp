@@ -4,9 +4,11 @@
 
 #include "alloc.h"
 #include "drivers.h"
+#include "mem_mgr.h"
 #include "startup.h"
 #include "stm32_rcc.h"
 #include "stm32_rtc.h"
+#include "sys_ctl_block.h"
 #include "sys_timer.h"
 
 // #define _INITIAL_SP (&main_stack[63])
@@ -217,6 +219,7 @@ main(void)
     struct RTC_datetime dt;
     RTC->get_datetime(&dt);
 
+    mem_mgr_init();
     alloc_init();
     void *p = _malloc(64);
     void *p2 = _malloc(64);

@@ -130,7 +130,7 @@
 static size_t
 round_up_to_mult(const size_t value, const size_t mult_of)
 {
-    const size_t round_down = (value - 1u) & (~mult_of);
+    const size_t round_down = (value - 1u) & ~(mult_of - 1);
     return round_down + mult_of;
 }
 
@@ -617,10 +617,76 @@ static Skiplist free_list_start(nullptr);
 //TODO: skiplist needs an allocation function from mem_mgr to get blocks of mem
 void
 alloc_init(void) {
-    free_list_start = Skiplist(nullptr);
+    free_list_start = Skiplist(allocatePages);
 }
 
-/* TODO: new and new[] operators */
+/* The _ker_* functions assume the caller enforces the restrictions
+ * e.g. aligned sizes, aligned pointers
+ */
+void *
+_ker_malloc(const size_t req_size)
+{
+    return free_list_start.malloc(req_size);
+}
+
+void *
+_ker_calloc(const size_t req_size)
+{
+    size_t *p = static_cast<size_t *>(free_list_start.malloc(req_size));
+    if (p == nullptr) {
+        return nullptr;
+    }
+
+    /* p is assumed to be a multiple of size_t bytes */
+    const size_t count = req_size / sizeof(size_t);
+    for (unsigned i = 0; i < count; i++) {
+        size_t *c = p;
+        c[i] = 0;
+    }
+    return p;
+}
+
+void
+_ker_free(const size_t req_size, void *const p)
+{
+    free_list_start.free(req_size, p);
+}
+
+void *
+_ker_realloc(const size_t old_size, const size_t new_size, void *const p)
+{
+    size_t *ret = static_cast<size_t *>(free_list_start.resize(old_size, new_size, static_cast<void *>(p)));
+    if (ret == nullptr) {
+        /* Need to allocate new block */
+        ret = static_cast<size_t *>(free_list_start.malloc(new_size));
+        if (ret == nullptr) {
+            /* Couldn't allocate more mem */
+            return nullptr;
+        }
+
+        /* Copy data over */
+        size_t copy_size;
+        if (new_size < old_size)  {
+            copy_size = new_size;
+        } else {
+            copy_size = old_size;
+        }
+
+        size_t count = copy_size / sizeof(size_t);
+        size_t *const r = static_cast<size_t *>(ret);
+        size_t *const c = static_cast<size_t *>(p);
+        for (size_t i = 0; i < count; i++) {
+            r[i] = c[i];
+        }
+
+        /* Free old mem */
+        free_list_start.free(old_size, static_cast<void *>(p));
+
+        return static_cast<void *>(r);
+    }
+
+    return ret;
+}
 
 void *
 _malloc(const size_t req_size) {
@@ -630,7 +696,7 @@ _malloc(const size_t req_size) {
 
     const size_t size = round_up_to_mult(req_size, ALIGNMENT) + MALLOC_HEADER_SIZE;
 
-    size_t *p = static_cast<size_t *>(free_list_start.malloc(size));
+    size_t *p = static_cast<size_t *>(_ker_malloc(size));
     p[0] = size;
     const uintptr_t p_int = reinterpret_cast<uintptr_t>(p);
     return reinterpret_cast<void *>(p_int + MALLOC_HEADER_SIZE);
@@ -644,17 +710,7 @@ _calloc(const size_t req_size) {
 
     const size_t size = round_up_to_mult(req_size, ALIGNMENT) + MALLOC_HEADER_SIZE;
 
-    size_t *p = static_cast<size_t *>(free_list_start.malloc(size));
-    if (p == nullptr) {
-        return nullptr;
-    }
-
-    /* p is guaranteed to be a multiple of size_t bytes */
-    const size_t count = size / ALIGNMENT;
-    for (unsigned i = 1; i < count; i++) {
-        size_t *c = p;
-        c[i] = 0;
-    }
+    size_t *p = static_cast<size_t *>(_ker_calloc(size));
     p[0] = size;
     const uintptr_t p_int = reinterpret_cast<uintptr_t>(p);
     return reinterpret_cast<void *>(p_int + MALLOC_HEADER_SIZE);
@@ -670,7 +726,7 @@ _free(void *const p) {
     size_t *const q = reinterpret_cast<size_t *>(p_int - MALLOC_HEADER_SIZE);
     const size_t size = q[0];
 
-    free_list_start.free(size, static_cast<void *>(q));
+    _ker_free(size, static_cast<void *>(q));
 }
 
 void *
@@ -696,40 +752,16 @@ _realloc(const size_t req_size, void *const p) {
         return p;
     }
     /* Actual realloc */
-    size_t *ret = static_cast<size_t *>(free_list_start.resize(old_size, new_size, static_cast<void *>(q)));
+    size_t *ret = static_cast<size_t *>(_ker_realloc(old_size, new_size, static_cast<void *>(q)));
     if (ret == nullptr) {
-        /* Need to allocate new block */
-        ret = static_cast<size_t *>(free_list_start.malloc(new_size));
-        if (ret == nullptr) {
-            /* Couldn't allocate more mem */
-            return nullptr;
-        }
-        /* First slot is for storing size of block allocated */
-        ret[0] = new_size;
-
-        /* Copy data over */
-        size_t copy_size;
-        if (new_size < old_size)  {
-            copy_size = new_size;
-        } else {
-            copy_size = old_size;
-        }
-
-        size_t count = (copy_size - MALLOC_HEADER_SIZE) / sizeof(size_t);
-        const uintptr_t ret_int = reinterpret_cast<uintptr_t>(ret);
-        size_t *const r = reinterpret_cast<size_t *>(ret_int + MALLOC_HEADER_SIZE);
-        size_t *const c = static_cast<size_t *>(p);
-        for (size_t i = 0; i < count; i++) {
-            r[i] = c[i];
-        }
-
-        /* Free old mem */
-        free_list_start.free(old_size, static_cast<void *>(q));
-
-        return static_cast<void *>(r);
+        return nullptr;
     }
 
-    return ret;
+    /* First slot is for storing size of block allocated */
+    ret[0] = new_size;
+
+    const uintptr_t ret_int = reinterpret_cast<uintptr_t>(ret);
+    return reinterpret_cast<void *>(ret_int + MALLOC_HEADER_SIZE);
 }
 
 void *operator new(size_t size)

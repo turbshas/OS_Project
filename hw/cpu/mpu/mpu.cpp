@@ -121,6 +121,10 @@ Mpu::set_config(const unsigned num, const mpu_region &region) volatile
         return -2;
     }
 
+    if (!region.check_valid()) {
+        return -3;
+    }
+
     const uint32_t rbar_val = get_rbar(num, region);
     const uint32_t rasr_val = get_rasr(region);
 

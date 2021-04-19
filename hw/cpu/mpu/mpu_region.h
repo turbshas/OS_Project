@@ -21,8 +21,10 @@ class mpu_region {
         };
         /* Format of these is MPU_AP_(1)_(2) where (1) is priv and (2) is unpriv */
         enum access_permissions { AP_NONE = 0, AP_RW_NONE, AP_RW_RO, AP_RW_RW,
-                                  AP_RSVD, AP_RO_NONE, AP_RO_RO, AP_RO_RO2 };
+                                  AP_RSVD,     AP_RO_NONE, AP_RO_RO, AP_RO_RO2 };
         mpu_region();
+        /* Performs all the validity checks that the set_* functions do */
+        bool check_valid() const;
         /* Requirements on address and size:
          * Size must be greater than 3 and less than 32
          * The only valid bits of address are 31:(Size + 1)
@@ -48,7 +50,7 @@ class mpu_region {
          * 0b001    0 0 b Normal, noncacheable
          * 0b001    0 1 x Reserved
          * 0b001    1 0 x Implementation-specific
-         * 0b001    1 1 b Noraml, write-back, write-allocate
+         * 0b001    1 1 b Normal, write-back, write-allocate
          * 0b010    0 0 x Device, unshareable
          * 0b010    0 1 x Reserved
          * 0b010    1 x x Reserved
@@ -87,6 +89,13 @@ class mpu_region {
         bool bufferable;
         bool shareable;
         enum access_permissions ap;
+
+        /* Parameter validation */
+        bool check_size(const uint32_t size_val) const;
+        bool check_addr(const uint32_t size_val, const uint32_t addr_val) const;
+        bool check_subregion_disable(const uint32_t srd) const;
+        bool check_attributes(const enum type_expansions type_expansion, const bool cacheable_val, const bool bufferable_val) const;
+        bool check_permissions(const enum access_permissions ap_val) const;
 };
 
 #endif /* _MPU_REGION_H */

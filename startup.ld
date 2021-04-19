@@ -34,6 +34,7 @@ SECTIONS
         __exidx_end = .;
     } >FLASH
 
+    /* Read-only data can stay in the flash (no need to copy to RAM) */
     .rodata :
     {
         *(.rodata)
@@ -45,6 +46,7 @@ SECTIONS
     _DATA_ROM_START = .;
 
 #ifdef __STM32F4xx__
+    /* This section is probably wrong, but I'm not using it right now anyway */
     /* Location of .ccmram section in binary file */
     _CCM_ROM_START = ADDR(_DATA_ROM_START) + SIZEOF(.data);
 
@@ -61,6 +63,9 @@ SECTIONS
 
     . = 0x20000000;
 
+    /* Section for data in RAM (file scope variables)
+     * Loaded into the flash, then copied from the flash to RAM during boot
+     */
     .data :
     {
         _DATA_RAM_START = .;
@@ -69,6 +74,9 @@ SECTIONS
     } >SRAM0 AT> FLASH
     _DATA_SIZE = SIZEOF(.data);
 
+    /* Zero-initialized data
+     * Loaded into the flash, then initialized in RAM during boot
+     */
     .bss :
     {
         _BSS_START = .;
@@ -81,6 +89,7 @@ SECTIONS
 
     _ALLOCABLE_MEM = .;
 
+    /* Regular RAM section */
     .heap :
     {
         __heap_start__ = .;

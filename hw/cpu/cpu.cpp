@@ -1,5 +1,7 @@
 #include "cpu.h"
 
+#if 0
+
 static Cpu hw_cpus[NUM_CPUS];
 
 void
@@ -76,3 +78,4 @@ SysTick_Handler(void)
     : "memory" );
 }
 
+#endif

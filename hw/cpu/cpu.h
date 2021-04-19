@@ -1,6 +1,8 @@
 #ifndef _CPU_H
 #define _CPU_H
 
+#include <stdio.h>
+
 #define NUM_CPUS 1u
 
 struct CpuRegsOnStack {

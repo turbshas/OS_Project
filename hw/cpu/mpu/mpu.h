@@ -37,7 +37,6 @@ extern volatile Mpu *const MPU;
  *  - Disable MPU during faults
  *  - Enable default region
  */
-void mpu_init(void);
 
 #endif /* MPU_H */
 
