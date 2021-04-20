@@ -5,6 +5,11 @@
 
 #define PAGE_SIZE (2 * 1024)
 
+class MemMgr {
+    public:
+        MemMgr();
+};
+
 void *allocatePages(const size_t size);
 void mem_mgr_init();
 

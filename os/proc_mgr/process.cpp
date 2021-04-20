@@ -16,15 +16,13 @@ Process::Process()
     _state = ProcessState::Created;
     _swapped = false;
     _returnCode = 0;
-    _activeRegions = 0x1;
-    _numThreads = 1;
-    _firstThread = new Thread(this);
-    _lastThread = _firstThread;
+    _threadList.pushFront(new Thread(this));
 }
 
 Process::~Process()
 {
-    while (_firstThread != _lastThread) {
-        delete _firstThread;
+    while (!_threadList.empty()) {
+        Thread *thread = _threadList.popFront();
+        delete thread;
     }
 }

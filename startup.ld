@@ -17,20 +17,33 @@ SECTIONS
     .text :
     {
         KEEP(*(ISR_VECTORS))  /* vector table */
-        *(.start)
         *(.text)         /* program code */
         *(.text*)
         *(.eh_frame)
-        *(.init)
-        *(.fini)
     } >FLASH
 
+    .start :
+    {
+        KEEP(*(.start))
+        KEEP(*(.init))
+        KEEP(*(.fini))
+    } > FLASH
+
+    .init_array :
+    {
+        __init_array_start = .;
+        *(.init_array)
+        *(.init_array.*)
+        __init_array_end = .;
+    } > FLASH
+
+    /* Exception handling stuff */
     .ARM.extab : {
         *(.ARM.extab* .gnu.linkonce.armextab.*)
     } >FLASH
     .ARM : {
         __exidx_start = .;
-        *(.ARM.exidx*)
+        *(.ARM.exidx* .gnu.linkonce.armexidx.*)
         __exidx_end = .;
     } >FLASH
 
@@ -82,6 +95,7 @@ SECTIONS
         _BSS_START = .;
         __bss_start__ = .;
         *(.bss)
+        *(.bss.*)
         __bss_end__ = .;
         _BSS_END = .;
     } >SRAM0 AT> FLASH

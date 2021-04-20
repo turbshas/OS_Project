@@ -40,8 +40,12 @@ COMPILE_FLAGS:=\
     -mcpu=cortex-m3 \
     -mfloat-abi=softfp \
     -mfpu=vfp \
-    -mthumb
-
+    -mthumb \
+	-nostdlib \
+	-fno-exceptions \
+	-fno-unwind-tables \
+	-fno-rtti
+# stuff to disable std lib
 all: $(BINARY)
 
 # Get make to recompile when header files are changed
@@ -84,5 +88,8 @@ debug: $(ELF) $(BINARY)
 clean:
 	$(HIDE_OUTPUT)rm -rf build
 
-.PHONY: all default run debug clean
+readelf: $(ELF)
+	arm-none-eabi-readelf $< -a
+
+.PHONY: all default run debug clean readelf
 

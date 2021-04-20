@@ -2,14 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "alloc.h"
-#include "drivers.h"
-#include "mem_mgr.h"
 #include "startup.h"
 #include "stm32_rcc.h"
-#include "stm32_rtc.h"
 #include "sys_ctl_block.h"
 #include "sys_timer.h"
+
+#include "kernel.h"
 
 // #define _INITIAL_SP (&main_stack[63])
 #define _INITIAL_SP ((void *)0x20020000) /* Will have to find a better place for this */
@@ -44,11 +42,22 @@ Reset_Handler(void)
     }
 
 #endif
+
+    /* Run C++ static constructors */
+    uintptr_t *initializer = reinterpret_cast<uintptr_t *>(&__init_array_start);
+    uintptr_t *initializersEnd = reinterpret_cast<uintptr_t *>(&__init_array_end);
+    while (initializer < initializersEnd) {
+        /* Make sure the address we're branching to is set to run in Thumb mode */
+        const uintptr_t thumbInitializer = (*initializer) | 0x1;
+        FunctionPointer fp = reinterpret_cast<FunctionPointer>(thumbInitializer);
+        fp();
+        initializer++;
+    }
+
     /* Start runnin boi */
     (void)main();
 }
 
-typedef void (*FunctionPointer)();
 __attribute__((section ("ISR_VECTORS"))) FunctionPointer isr_vector_table[] = {
     reinterpret_cast<FunctionPointer>(_INITIAL_SP),
     Reset_Handler,
@@ -208,25 +217,11 @@ main(void)
 {
     System_Init();
 
-    /*
-    ker_main();
-     */
-
-    // Test stuff
-    usart_driver_init();
-    usart_send_string(USART3, "hello world\n", sizeof("hello world\n"));
-
-    struct RTC_datetime dt;
-    RTC->get_datetime(&dt);
-
-    mem_mgr_init();
-    alloc_init();
-    void *p = _malloc(64);
-    void *p2 = _malloc(64);
-    int *p3 = new int[6];
-    _free(p);
-    delete[] p3;
-    _free(p2);
+    //try {
+        ker_main();
+    //} catch (...) {
+        // Nothing we can do, just proceed to spin loop
+    //}
 
     for ( ;; ) {}
 

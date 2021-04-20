@@ -49,9 +49,13 @@ extern unsigned int _DATA_RAM_START;
 extern unsigned int _DATA_RAM_END;
 extern unsigned int _BSS_START;
 extern unsigned int _BSS_END;
+extern unsigned int __init_array_start;
+extern unsigned int __init_array_end;
 
 #define CCM_RAM_START_LOC ((void *)0x10000000)
 #define CCM_RAM_END_LOC (CCM_RAM_START_LOC + (64 * 1024))
+
+typedef void (*FunctionPointer)();
 
 int main(void);
 

@@ -2,8 +2,12 @@
 #define _PROCESS_H
 
 #include <cstdint>
+
+#include "doubly_linked_list.h"
 #include "mpu.h"
 #include "thread.h"
+
+#define MAX_MPU_REGIONS 8
 
 class Process {
     public:
@@ -41,12 +45,8 @@ class Process {
         bool _swapped;
         uint32_t _returnCode;
 
-        uint8_t _activeRegions;
-        mpu_region _memRegions[8]; /* TODO: make this a linked list as well? */
-
-        uint32_t _numThreads;
-        Thread *_firstThread;
-        Thread *_lastThread;
+        DoublyLinkedList<mpu_region *> _memRegionList;
+        DoublyLinkedList<Thread *> _threadList;
 };
 
 #endif

@@ -1,6 +1,8 @@
 #ifndef _DOUBLY_LINKED_LIST_H
 #define _DOUBLY_LINKED_LIST_H
 
+#include <cstdio>
+
 template <class T>
 class DoublyLinkedList {
     struct list_item;
@@ -47,7 +49,7 @@ class DoublyLinkedList {
             T item;
 
             list_item();
-            list_item(const list_item *prev, const list_item *next, const T& item);
+            list_item(list_item *const prev, list_item *const next, const T& item);
             ~list_item();
         };
 
@@ -111,7 +113,7 @@ DoublyLinkedList<T>::list_item::list_item()
 }
 
 template <class T>
-DoublyLinkedList<T>::list_item::list_item(const list_item *prev_item, const list_item *next_item, const T& item_val)
+DoublyLinkedList<T>::list_item::list_item(list_item *const prev_item, list_item *const next_item, const T& item_val)
 {
     prev = prev_item;
     next = next_item;
