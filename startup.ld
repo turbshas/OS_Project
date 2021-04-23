@@ -19,7 +19,7 @@ SECTIONS
         KEEP(*(ISR_VECTORS))  /* vector table */
         *(.text)         /* program code */
         *(.text*)
-        *(.eh_frame)
+        /**(.eh_frame) /* For exception handling? */
     } >FLASH
 
     .start :
@@ -38,6 +38,7 @@ SECTIONS
     } > FLASH
 
     /* Exception handling stuff */
+    /*
     .ARM.extab : {
         *(.ARM.extab* .gnu.linkonce.armextab.*)
     } >FLASH
@@ -46,6 +47,7 @@ SECTIONS
         *(.ARM.exidx* .gnu.linkonce.armexidx.*)
         __exidx_end = .;
     } >FLASH
+    */
 
     /* Read-only data can stay in the flash (no need to copy to RAM) */
     .rodata :
@@ -104,6 +106,7 @@ SECTIONS
     _ALLOCABLE_MEM = .;
 
     /* Regular RAM section */
+    /*
     .heap :
     {
         __heap_start__ = .;
@@ -115,6 +118,10 @@ SECTIONS
         __HeapLimit = __heap_end__;
     } >SRAM0 AT> FLASH
     _HEAP_SIZE = SIZEOF(.heap);
+    */
+
+    . = ORIGIN(SRAM0) + LENGTH(SRAM0);
+    _INITIAL_STACK_POINTER = .;
 
     /DISCARD/ :
     {

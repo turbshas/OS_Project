@@ -10,18 +10,16 @@ static uint32_t getNextThreadId()
     return threadCounter;
 }
 
-Thread::Thread(Process *parentProcess)
+Thread::Thread(Process &parentProcess)
+    : _regs()
 {
-    if (parentProcess == nullptr) {
-        // What to do?
-    }
-
     _threadId = getNextThreadId();
-    _parentProcess = parentProcess;
+    _parentProcess = &parentProcess;
     _state = ThreadState::Created;
     _next = this;
     _prev = this;
-    _regs = {};
+    _privileged = false;
+    _useMainStack = true;
     _stack = _ker_malloc(STACK_SIZE);
 }
 

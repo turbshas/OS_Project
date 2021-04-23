@@ -9,8 +9,8 @@
 
 #include "kernel.h"
 
-// #define _INITIAL_SP (&main_stack[63])
-#define _INITIAL_SP ((void *)0x20020000) /* Will have to find a better place for this */
+extern unsigned _INITIAL_STACK_POINTER; /* Defined in linker script. Used by interrupt handlers as their stack */
+
 #define I2C1_LOC ((void *)0x40005400)
 
 __attribute__((interrupt("IRQ")))
@@ -59,7 +59,7 @@ Reset_Handler(void)
 }
 
 __attribute__((section ("ISR_VECTORS"))) FunctionPointer isr_vector_table[] = {
-    reinterpret_cast<FunctionPointer>(_INITIAL_SP),
+    reinterpret_cast<FunctionPointer>(&_INITIAL_STACK_POINTER),
     Reset_Handler,
     NMI_Handler,
     HardFault_Handler,
@@ -212,18 +212,21 @@ System_Init(void)
     sys_timer_init();
 }
 
+__attribute__((noreturn))
+void
+abort(void)
+{
+    for ( ;; ) {}
+}
+
 int
 main(void)
 {
     System_Init();
 
-    //try {
-        ker_main();
-    //} catch (...) {
-        // Nothing we can do, just proceed to spin loop
-    //}
+    ker_main();
 
-    for ( ;; ) {}
+    abort();
 
     return 0;
 }

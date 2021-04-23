@@ -16,7 +16,7 @@ Process::Process()
     _state = ProcessState::Created;
     _swapped = false;
     _returnCode = 0;
-    _threadList.pushFront(new Thread(this));
+    _threadList.pushFront(new Thread(*this));
 }
 
 Process::~Process()

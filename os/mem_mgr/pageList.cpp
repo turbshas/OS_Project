@@ -36,6 +36,10 @@ PageList::PageList()
     sentinel.prev = &sentinel;
 }
 
+PageList::~PageList()
+{
+}
+
 void
 PageList::initialize(const size_t numPages, void *const startAddr)
 {

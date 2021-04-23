@@ -21,6 +21,7 @@ class PageList {
 
     public:
         PageList();
+        ~PageList();
         void initialize(const size_t numPages, void *const startAddr);
         void *allocatePages(const size_t numPages);
         void freePages(const size_t numPages, void *startAddr);

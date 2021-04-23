@@ -767,18 +767,12 @@ _realloc(const size_t req_size, void *const p) {
 void *operator new(size_t size)
 {
     void *p = _malloc(size);
-    if (p == nullptr) {
-        //throw std::bad_alloc{};
-    }
     return p;
 }
 
 void *operator new[](size_t size)
 {
     void *p = _malloc(size);
-    if (p == nullptr) {
-        //throw std::bad_alloc{};
-    }
     return p;
 }
 

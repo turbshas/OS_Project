@@ -1,0 +1,21 @@
+#include "cpuRegsOnStack.h"
+
+CpuRegsOnStack::CpuRegsOnStack()
+{
+    R4 = 0x0;
+    R5 = 0x0;
+    R6 = 0x0;
+    R7 = 0x0;
+    R8 = 0x0;
+    R9 = 0x0;
+    R10 = 0x0;
+    R11 = 0x0;
+    R0 = 0x0;
+    R1 = 0x0;
+    R2 = 0x0;
+    R3 = 0x0;
+    R12 = 0x0;
+    LR = 0x0;
+    PC = 0x0;
+    PSR = 0x0;
+}

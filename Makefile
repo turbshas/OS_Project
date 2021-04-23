@@ -27,21 +27,27 @@ LINKER_SCRIPT := build/startup.ld.preproc
 ELF := build/startup.elf
 BINARY := build/startup.bin
 
+ARCH_FLAGS:=\
+	-march=armv7-m \
+	-mcpu=cortex-m3 \
+	-mthumb
+
+COMPILE_AND_LINK_FLAGS:=\
+	$(ARCH_FLAGS) \
+	-nostdlib
+
 LINKER_FLAGS:=\
+	$(COMPILE_AND_LINK_FLAGS) \
     -Wl,-T$(LINKER_SCRIPT) \
-    --specs=nosys.specs
+    --specs=nosys.specs \
 
 COMPILE_FLAGS:=\
+	$(COMPILE_AND_LINK_FLAGS) \
 	-std=c++17 \
     -O0 \
     -g \
     -Wall \
 	-Wextra \
-    -mcpu=cortex-m3 \
-    -mfloat-abi=softfp \
-    -mfpu=vfp \
-    -mthumb \
-	-nostdlib \
 	-fno-exceptions \
 	-fno-unwind-tables \
 	-fno-rtti
@@ -78,6 +84,11 @@ $(BINARY): $(ELF)
 QEMU := qemu-pebble
 GDB := gdb-multiarch
 GDB_PORT := 63770
+
+TEST_QEMU := qemu-system-gnuarmeclipse
+
+test_run: $(BINARY)
+	$(TEST_QEMU) -serial null -serial null -serial stdio -gdb tcp::$(GDB_PORT),server -machine STM32F4-Discovery -cpu cortex-m4 -kernel $< -S
 
 run: $(BINARY)
 	$(QEMU) -rtc base=localtime -serial null -serial null -serial stdio -gdb tcp::$(GDB_PORT),server -machine pebble-bb2 -cpu cortex-m3 -pflash $< -S

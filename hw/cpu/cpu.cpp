@@ -1,5 +1,23 @@
 #include "cpu.h"
 
+/* SVC Interrupt used for service calls - goes directly to a function that handles requests to make OS calls
+ * PendSV used for context switching - from OS back to user process I guess?
+ * SysTick used for time slicing - loads the OS thread then chooses which thread to run next
+ * 
+ * PendSV needs to be set to lowest priority in the system - prevents a context switch from occurring during ISR handlers
+ * Option: SysTick sets the thread scheduler to run next, then sets a pending PendSV request to do the context switch when all other ISRs have finished
+ *   -> probably this option
+ * 
+ * Need to handle tail chaining and preemption:
+ * - SysTick occuring during a PendSV - should be fine, SysTick tail chains back into the thread scheduler
+ * - PendSV during SysTick - shouldn't happen (PendSV should only be caused by OS)
+ * - SysTick during SVC - thread scheduler is going to have to check if the running thread was the OS thread
+ *    -> return early if it was and let the SVC call complete
+ *       (bonus: complete the call but schedule a new thread to run instead of returning to the caller?)
+ * - SVC during PendSV, PendSV during SVC, and SVC during SysTick shouldn't happen
+ * 
+ */
+
 #if 0
 
 static Cpu hw_cpus[NUM_CPUS];
