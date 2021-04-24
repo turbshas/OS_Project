@@ -19,67 +19,43 @@
 #define ICSR_PENDSVCLR  (1u << 27)
 
 class SysControlBlock {
-    uint32_t ACTLR;
+    uint32_t ACTLR; // Auxiliary Control
     uint32_t rsvd1;
 
     /* Sys timer registers */
-    uint32_t CSR;
-    uint32_t RVR;
-    uint32_t CVR;
-    uint32_t CALIB;
+    uint32_t CSR;   // SysTick Control and Status
+    uint32_t RVR;   // SysTick Reload Value
+    uint32_t CVR;   // SysTick Current Value
+    uint32_t CALIB; // SysTick Calibration Value
 
     uint32_t rsvd2[824];
-    uint32_t CPUID;
-    uint32_t ICSR;
-    uint32_t VTOR;
-    uint32_t AIRCR;
-    uint32_t SCR;
-    uint32_t CCR;
-    uint32_t SHPR1;
-    uint32_t SHPR2;
-    uint32_t SHPR3;
-    uint32_t SHCRS;
-    uint32_t CFSR;
-    uint32_t MMSR;
-    uint32_t BFSR;
-    uint32_t UFSR;
-    uint32_t HFSR;
-    uint32_t MMAR;
-    uint32_t BFAR;
-    uint32_t AFSR;
+    uint32_t CPUID; // CPU ID Base
+    uint32_t ICSR;  // Interrupt Control and State
+    uint32_t VTOR;  // Vector Table Offset
+    uint32_t AIRCR; // Application Interrupt and Reset Control
+    uint32_t SCR;   // System Control
+    uint32_t CCR;   // Configuration and Control
+    uint32_t SHPR1; // System Handler Priority 1
+    uint32_t SHPR2; // System Handler Priority 2
+    uint32_t SHPR3; // System Handler Priority 3
+    uint32_t SHCRS; // System Handler Control and State
+    uint32_t CFSR;  // Configurable Fault Status
+    uint32_t MMSR;  // MemManage Fault Status
+    uint32_t BFSR;  // BusFault Status
+    uint32_t UFSR;  // UsageFault Status
+    uint32_t HFSR;  // HardFault Status
+    uint32_t MMAR;  // MemManage Fault Address
+    uint32_t BFAR;  // BusFault Address
+    uint32_t AFSR;  // Auxiliary Fault Status
 
     public:
-        void disable_sys_tick(void) volatile;
-        void enable_sys_tick(void) volatile;
-        void set_pending_pendsv(void) volatile;
-        void clear_pending_pendsv(void) volatile;
+        void disable_sys_tick(void) volatile { CSR &= ~CSR_TICKINT; };
+        void enable_sys_tick(void) volatile { CSR |= CSR_TICKINT; };
+        void set_pending_pendsv(void) volatile { ICSR |= ICSR_PENDSVSET; };
+        void clear_pending_pendsv(void) volatile { ICSR |= ICSR_PENDSVCLR; };
 
-        void setup_sys_timer(void) volatile;
+        void initialize(void) volatile;
 };
-
-inline void
-SysControlBlock::disable_sys_tick(void) volatile
-{
-    CSR &= ~CSR_TICKINT;
-}
-
-inline void
-SysControlBlock::enable_sys_tick(void) volatile
-{
-    CSR |= CSR_TICKINT;
-}
-
-inline void
-SysControlBlock::set_pending_pendsv(void) volatile
-{
-    ICSR |= ICSR_PENDSVSET;
-}
-
-inline void
-SysControlBlock::clear_pending_pendsv(void) volatile
-{
-    ICSR |= ICSR_PENDSVCLR;
-}
 
 extern volatile SysControlBlock *const SYS_CTL;
 

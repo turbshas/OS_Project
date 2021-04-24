@@ -1,4 +1,6 @@
 #include "cpu.h"
+#include "sys_ctl_block.h"
+#include "thread.h"
 
 /* SVC Interrupt used for service calls - goes directly to a function that handles requests to make OS calls
  * PendSV used for context switching - from OS back to user process I guess?
@@ -18,6 +20,57 @@
  * 
  */
 
+bool switchToScheduler;
+Thread *schedulerThread;
+Thread *runningThread;
+CpuRegsOnStack *runningThreadStack;
+extern unsigned _INITIAL_STACK_POINTER;
+
+__attribute__((noreturn))
+void
+threadScheduler(void)
+{
+    for ( ;; ) {}
+}
+
+__attribute__((interrupt, naked, noreturn))
+void
+PendSV_Handler(void)
+{
+    // Save registers to stack immediately - regardless of previous thread
+    // Save registers R4-R11 of the previously running thread to the stack
+    asm volatile (
+        "\n\t" "LDR     R0, [%0]"
+        "\n\t" "STMDB   R0!, { R4-R11 }"
+        :
+        : "r" (&runningThreadStack)
+        : "r0", "memory");
+    
+    SYS_CTL->clear_pending_pendsv();
+
+    if (switchToScheduler) {
+        // Set the registers on the stack to prepare for the scheduler (privileged mode, main stack pointer, PC)
+        const uintptr_t initialStackPointerInt = reinterpret_cast<uintptr_t>(&_INITIAL_STACK_POINTER);
+        CpuRegsOnStack *const stackPointer = reinterpret_cast<CpuRegsOnStack *>(initialStackPointerInt - sizeof(CpuRegsOnStack) + offsetof(CpuRegsOnStack, R0));
+        stackPointer->PC = reinterpret_cast<uint32_t>(threadScheduler);
+        stackPointer->PSR = (1u << 24);
+        const uint32_t linkRegisterValue = 0xfffffff9; // Return to thread mode, get state from main stack
+
+        // Set the main stack pointer and return
+        asm volatile (
+            "\n\t" "MSR     MSP, %0"
+            "\n\t" "MOV     LR, %1"
+            "\n\t" "BX      LR"
+            : : "r" (stackPointer), "r" (linkRegisterValue));
+    } else {
+        // Need to setup the next threads registers
+    }
+}
+
+void cpu_init(void) {
+    for (int i = 0; i < 10; i++) {}
+}
+
 #if 0
 
 static Cpu hw_cpus[NUM_CPUS];
@@ -30,70 +83,6 @@ Cpu::collectCpuInfo()
 void
 Cpu::dispatchThread(Thread& thread)
 {
-}
-
-__attribute__((naked, interrupt))
-void
-SysTick_Handler(void)
-{
-    register void *val asm("r1");
-    val = &active_stack;
-    asm volatile (
-    /* Get stack value. */
-    "TST    LR, #0x4\n\t" /* Bit 3 of LR says which stack is being used */
-    "ITE    EQ\n\t"
-    "MRSEQ  R0, MSP\n\t"
-    "MRSNE  R0, PSP\n\t"
-    /* Save register R4 to R11 to stack. */
-    "STMDB  R0!, { R4-R11 }\n\t" /* STM Decrement Before/Full Descending */
-    /* Figure out privileges, stack used. */
-    /* Privileges and stack used will be stored in the lower 2 bits of the stack pointer as it is 4-byte aligned anyway */
-    "MRS    R2, CONTROL\n\t"
-    "TST    R2, #0x1\n\t" /* Bit 0 of Control register stores whether priv/unpriv */
-    "IT     NE\n\t"
-    "ORRNE  R0, R0, #0x2\n\t" /* Priv/unpriv */
-    "TST    LR, #0x4\n\t"
-    "IT     EQ\n\t"
-    "ORREQ  R0, R0, #0x1\n\t" /* MSP/PSP */
-    /* Save stack pointer to array. */
-    "LDR    %0, [%0]\n\t"
-    "STR    R0, [%0]\n\t"
-    :
-    : "r" (val)
-    : "memory" );
-
-    val = &thread_sp[1];
-
-    asm volatile (
-    /* Load the stack pointer. */
-    "LDR    R0, [%0]\n\t"
-
-    /* Restore proper privilege. */
-    "MRS    R2, CONTROL\n\t"
-    "TST    R0, #0x2\n\t"
-    "ITE    EQ\n\t"
-    "BICEQ  R2, R2, #0x1\n\t" /* Clear bit 0 (set unprivileged). */
-    "ORRNE  R2, R2, #0x1\n\t" /* Set bit 0 (set privileged). */
-    "MSR    CONTROL, R2\n\t"
-    "BIC    R0, R0, #0x2\n\t" /* Clear bit 1 so we can use R0 as SP. */
-
-    /* Restore stack pointer. */
-    "TST    R0, #0x1\n\t"
-    "BIC    R0, R0, #0x1\n\t" /* Clear bit 0 so we can use R0 as SP. */
-    /* Restore R4-R11. */
-    "LDMIA  R0!, { R4-R11 }\n\t"
-
-    "ITTEE  EQ\n\t"
-    "MSREQ  PSP, R0\n\t"
-    "ORREQ  LR, LR, #0x4\n\t" /* Set bit 2 in LR so PSP is used on return. */
-    "MSRNE  MSP, R0\n\t"
-    "BICNE  LR, LR, #0x4\n\t" /* Clear bit 2 in LR so MSP is used on return. */
-    "ISB\n\t"
-
-    "BX     LR\n\t"
-    :
-    : "r" (val)
-    : "memory" );
 }
 
 #endif

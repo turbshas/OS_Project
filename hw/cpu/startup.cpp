@@ -201,6 +201,13 @@ __attribute__((section ("ISR_VECTORS"))) FunctionPointer isr_vector_table[] = {
 #endif
 };
 
+__attribute__((noreturn))
+void
+abort(void)
+{
+    for ( ;; ) {}
+}
+
 static void
 System_Init(void)
 {
@@ -212,18 +219,14 @@ System_Init(void)
     sys_timer_init();
 }
 
-__attribute__((noreturn))
-void
-abort(void)
-{
-    for ( ;; ) {}
-}
+extern void cpu_init(void);
 
 int
 main(void)
 {
     System_Init();
 
+    cpu_init();
     ker_main();
 
     abort();

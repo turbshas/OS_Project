@@ -11,7 +11,6 @@ static uint32_t getNextThreadId()
 }
 
 Thread::Thread(Process &parentProcess)
-    : _regs()
 {
     _threadId = getNextThreadId();
     _parentProcess = &parentProcess;
@@ -20,7 +19,7 @@ Thread::Thread(Process &parentProcess)
     _prev = this;
     _privileged = false;
     _useMainStack = true;
-    _stack = _ker_malloc(STACK_SIZE);
+    _stack = static_cast<CpuRegsOnStack *>(_ker_malloc(STACK_SIZE));
 }
 
 Thread::~Thread()

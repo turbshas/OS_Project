@@ -39,7 +39,7 @@ thread_2(void)
 
 __attribute__((interrupt, naked, noreturn))
 void
-PendSV_Handler(void)
+old_PendSV_Handler(void)
 {
     SYS_CTL->clear_pending_pendsv();
 
@@ -101,8 +101,8 @@ ctx_switcher(void)
 }
 
 __attribute__((naked, interrupt))
-void
-SysTick_Handler(void)
+static void
+old_SysTick_Handler(void)
 {
     register void *val asm("r1");
     val = &active_stack;
@@ -164,6 +164,16 @@ SysTick_Handler(void)
     : "memory" );
 }
 
+uint32_t numSystemTicks;
+
+__attribute__((interrupt))
+void
+SysTick_Handler(void)
+{
+    numSystemTicks++;
+    SYS_CTL->set_pending_pendsv();
+}
+
 void
 sys_timer_init(void)
 {
@@ -193,6 +203,6 @@ sys_timer_init(void)
     thread_sp[3] = reinterpret_cast<struct cpu_regs_on_stack *>((uint32_t)p | 0x0);
     /* Everything else 0. */
 
-    SYS_CTL->setup_sys_timer();
+    SYS_CTL->initialize();
 }
 

@@ -2,10 +2,13 @@
 
 #define SYS_CTL_BLOCK_BASE 0xe000e008
 
+#define SHPR3_PENDSV 0xff0000
+#define SHPR3_PENDSV_SHIFT 16u
+
 volatile SysControlBlock *const SYS_CTL = reinterpret_cast<volatile SysControlBlock *>(SYS_CTL_BLOCK_BASE);
 
 void
-SysControlBlock::setup_sys_timer(void) volatile
+SysControlBlock::initialize(void) volatile
 {
     /*
      * Setup the system timer to tick every 8 ms.
@@ -22,5 +25,8 @@ SysControlBlock::setup_sys_timer(void) volatile
     CSR &= ~CSR_CLKSOURCE;
     CSR |= CSR_TICKINT;
     CSR |= CSR_ENABLE;
+
+    /* Set PendSV priority to a low amount - should be the last interrupt to run */
+    SHPR3 |= (128u << SHPR3_PENDSV_SHIFT) & SHPR3_PENDSV;
 }
 

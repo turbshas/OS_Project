@@ -29,7 +29,7 @@ class Thread {
         Thread *getNext()       const { return _next; };
         bool isPrivileged()     const { return _privileged; };
         bool isUsingMainStack() const { return _useMainStack; };
-        void *getStackPointer() const { return _stack; };
+        CpuRegsOnStack *getStackPointer() const { return _stack; };
 
     private:
         uint32_t _threadId;
@@ -40,10 +40,9 @@ class Thread {
         Thread *_prev;
         Thread *_next;
 
-        CpuRegsOnStack _regs;
         bool _privileged;
         bool _useMainStack;
-        void *_stack;
+        CpuRegsOnStack *_stack;
 };
 
 #endif
