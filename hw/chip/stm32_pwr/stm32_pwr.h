@@ -7,6 +7,12 @@ class PwrPeriph {
     uint32_t CR;
     uint32_t CSR;
 
+    private:
+        PwrPeriph() = delete;
+        ~PwrPeriph() = delete;
+        PwrPeriph(const PwrPeriph&) = delete;
+        PwrPeriph(PwrPeriph&&) = delete;
+
     public:
         void disable_bd_write_protection() volatile;
         void enable_bd_write_protection() volatile;

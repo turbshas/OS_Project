@@ -21,6 +21,12 @@ class ExtiPeriph {
     uint32_t SWIER;
     uint32_t PR;
 
+    private:
+        ExtiPeriph() = delete;
+        ~ExtiPeriph() = delete;
+        ExtiPeriph(const ExtiPeriph&) = delete;
+        ExtiPeriph(ExtiPeriph&&) = delete;
+
     public:
         int mask_interrupt(const uint32_t interrupt_num) volatile;
         int unmask_interrupt(const uint32_t interrupt_num) volatile;

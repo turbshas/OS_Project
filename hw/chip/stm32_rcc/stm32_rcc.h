@@ -68,6 +68,10 @@ class RccPeriph {
                         TIM10  = (1u << 17), TIM11  = (1u << 18) };
 
     private:
+        RccPeriph() = delete;
+        ~RccPeriph() = delete;
+        RccPeriph(const RccPeriph&) = delete;
+        RccPeriph(RccPeriph&&) = delete;
         void periph_cmd(volatile uint32_t *const reg, const uint32_t periph, const bool state) volatile;
     public:
         /*

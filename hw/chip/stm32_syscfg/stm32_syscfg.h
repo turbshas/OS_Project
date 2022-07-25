@@ -10,6 +10,11 @@ class SyscfgPeriph {
     uint32_t CMPCR;
 
     private:
+        SyscfgPeriph() = delete;
+        ~SyscfgPeriph() = delete;
+        SyscfgPeriph(const SyscfgPeriph&) = delete;
+        SyscfgPeriph(SyscfgPeriph&&) = delete;
+
         void set_exti_reg(const int reg, const int shift_amt, const int value) volatile;
 
     public:

@@ -7,12 +7,12 @@
 #define UART5_BASE          (PERIPH_BASE + 0x5000)
 #define USART6_BASE         (PERIPH_BASE + 0x11400)
 
-usart_t USART1 = reinterpret_cast<usart_t>(USART1_BASE);
-usart_t USART2 = reinterpret_cast<usart_t>(USART2_BASE);
-usart_t USART3 = reinterpret_cast<usart_t>(USART3_BASE);
-usart_t UART4  = reinterpret_cast<usart_t>(UART4_BASE);
-usart_t UART5  = reinterpret_cast<usart_t>(UART5_BASE);
-usart_t USART6 = reinterpret_cast<usart_t>(USART6_BASE);
+const usart_t USART1 = reinterpret_cast<usart_t>(USART1_BASE);
+const usart_t USART2 = reinterpret_cast<usart_t>(USART2_BASE);
+const usart_t USART3 = reinterpret_cast<usart_t>(USART3_BASE);
+const usart_t UART4  = reinterpret_cast<usart_t>(UART4_BASE);
+const usart_t UART5  = reinterpret_cast<usart_t>(UART5_BASE);
+const usart_t USART6 = reinterpret_cast<usart_t>(USART6_BASE);
 
 void
 UsartPeriph::enable() volatile

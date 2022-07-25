@@ -31,6 +31,12 @@ class UsartPeriph {
     uint32_t CR3;
     uint32_t GTPR;
 
+    private:
+        UsartPeriph() = delete;
+        ~UsartPeriph() = delete;
+        UsartPeriph(const UsartPeriph&) = delete;
+        UsartPeriph(UsartPeriph&&) = delete;
+
     public:
         void enable() volatile;
         void disable() volatile;
@@ -40,14 +46,14 @@ class UsartPeriph {
         volatile uint32_t *get_address_for_dma() volatile;
 };
 
-typedef volatile UsartPeriph *const usart_t;
+typedef volatile UsartPeriph * usart_t;
 
-extern usart_t USART1;
-extern usart_t USART2;
-extern usart_t USART3;
-extern usart_t UART4;
-extern usart_t UART5;
-extern usart_t USART6;
+extern const usart_t USART1;
+extern const usart_t USART2;
+extern const usart_t USART3;
+extern const usart_t UART4;
+extern const usart_t UART5;
+extern const usart_t USART6;
 
 #endif /* _USART_H */
 

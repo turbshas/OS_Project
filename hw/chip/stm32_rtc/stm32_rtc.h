@@ -32,6 +32,11 @@ class RtcPeriph {
     uint32_t BKPR[NUM_BKP_REG];
 
     private:
+        RtcPeriph() = delete;
+        ~RtcPeriph() = delete;
+        RtcPeriph(const RtcPeriph&) = delete;
+        RtcPeriph(RtcPeriph&&) = delete;
+
         void disable_write_protection(void) volatile;
         void enable_write_protection(void) volatile;
         int enter_init_mode(void) volatile;

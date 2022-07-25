@@ -111,7 +111,7 @@ void
 DmaRequest::check_dma_req() const
 {
     /* Make sure memory used is valid */
-    const uintptr_t mem1_int = reinterpret_cast<const uintptr_t>(mem1);
+    const uintptr_t mem1_int = reinterpret_cast<uintptr_t>(mem1);
     assert(
             ((mem1_int >= SRAM_BASE) && (mem1_int < (SRAM_BASE + SRAM_SIZE)))
 #ifdef __STM32F4xx__
@@ -120,7 +120,7 @@ DmaRequest::check_dma_req() const
             || ((mem1_int >= FLASH_BASE) && (mem1_int < (FLASH_BASE + FLASH_SIZE)))
           );
     if (mem2 != nullptr) {
-        const uintptr_t mem2_int = reinterpret_cast<const uintptr_t>(mem2);
+        const uintptr_t mem2_int = reinterpret_cast<uintptr_t>(mem2);
         assert(
                 ((mem2_int >= SRAM_BASE) && (mem2_int < (SRAM_BASE + SRAM_SIZE)))
 #ifdef __STM32F4xx__
@@ -130,7 +130,7 @@ DmaRequest::check_dma_req() const
               );
     }
     if (periph != nullptr) {
-        const uintptr_t periph_int = reinterpret_cast<const uintptr_t>(periph);
+        const uintptr_t periph_int = reinterpret_cast<uintptr_t>(periph);
         assert(periph_int >= PERIPH_BASE);
         assert(periph_int < (PERIPH_BASE + PERIPH_SIZE));
     }
@@ -159,7 +159,7 @@ DmaRequest::check_dma_req() const
         assert(0);
     }
     if (mem2 != nullptr) {
-        const uintptr_t mem2_int = reinterpret_cast<const uintptr_t>(mem2);
+        const uintptr_t mem2_int = reinterpret_cast<uintptr_t>(mem2);
         switch (mem_xfer_size) {
         case XFER_SIZE_WORD:
             assert((mem2_int & 0x3) == 0);

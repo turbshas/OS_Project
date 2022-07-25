@@ -88,6 +88,12 @@ class DmaPeriph {
     } streams[DMA_NUM_STREAMS];
 
     private:
+        // These exist at specific locations in memory - should never be created
+        DmaPeriph() = delete;
+        ~DmaPeriph() = delete;
+        DmaPeriph(const DmaPeriph&) = delete;
+        DmaPeriph(DmaPeriph&&) = delete;
+
         void read_dma_request(struct dma_stream_regs &dest, const DmaRequest &req) volatile;
         void set_config(const uint8_t stream, const struct dma_stream_regs &stream_cfg) volatile;
 
