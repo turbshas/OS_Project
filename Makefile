@@ -40,6 +40,7 @@ LINKER_FLAGS:=\
 	$(COMPILE_AND_LINK_FLAGS) \
     -Wl,-T$(LINKER_SCRIPT) \
     --specs=nosys.specs \
+	-g
 
 COMPILE_FLAGS:=\
 	$(COMPILE_AND_LINK_FLAGS) \
@@ -94,7 +95,7 @@ run: $(BINARY)
 	$(QEMU) -rtc base=localtime -serial null -serial null -serial stdio -gdb tcp::$(GDB_PORT),server -machine pebble-bb2 -cpu cortex-m3 -pflash $< -S
 
 debug: $(ELF) $(BINARY)
-	$(GDB) -tui --eval-command="target remote localhost:$(GDB_PORT)" $<
+	$(GDB) -tui --eval-command="target extended-remote localhost:$(GDB_PORT)" $<
 
 clean:
 	$(HIDE_OUTPUT)rm -rf build

@@ -1,0 +1,15 @@
+{
+    "configurations": [
+        {
+            "name": "Attach to Running QEMU",
+            "type": "gdb",
+            "request": "attach",
+            "executable": "${workspaceRoot}/build/startup.elf",
+            "gdbpath": "/usr/bin/gdb-multiarch",
+            "target": "localhost:63770",
+            "cwd": "${workspaceRoot}",
+            "remote": true,
+            "preLaunchTask": "Start QEMU Test"
+        },
+    ]
+}
