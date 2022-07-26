@@ -1,6 +1,19 @@
 #include "mem_mgr.h"
 #include "pageList.h"
 
+PageList::PageSequence::PageSequence()
+    : numPages(0),
+    prev(this),
+    next(this)
+{
+}
+
+PageList::PageSequence::~PageSequence()
+{
+    // Pages are cast from pointers to unused memory, not constructed.
+    // So nothing to deconstruct.
+}
+
 void
 PageList::PageSequence::insertAfter(PageSequence& insert)
 {
@@ -30,14 +43,14 @@ PageList::PageSequence::remove()
 }
 
 PageList::PageList()
+    : sentinel()
 {
-    sentinel.numPages = 0;
-    sentinel.next = &sentinel;
-    sentinel.prev = &sentinel;
 }
 
 PageList::~PageList()
 {
+    // Page list is essentially composed of pointers to unused memory, so nothing is allocated.
+    // Therefore, nothing to deconstruct.
 }
 
 void

@@ -1,7 +1,10 @@
 #ifndef PROC_MGR_H
 #define PROC_MGR_H
 
+#include "cpu.h"
+#include "doubly_linked_list.h"
 #include "mpu.h"
+#include "thread.h"
 
 /* TODO:
  *   - Move cpu_regs_on_stack to cpu folder
@@ -24,6 +27,23 @@
  *     - Store general state (idle, busy, etc.)
  *     - Could go for performance and have scheduling domains
  */
+class ProcessManager {
+    private:
+        DoublyLinkedList<Thread *> _ranToCompletionThreadQueue;
+        DoublyLinkedList<Thread *> _blockedThreadQueue;
+        Thread* _runningThreads[NUM_CPUS];
+
+    public:
+        ProcessManager();
+        ProcessManager(const ProcessManager&) = delete;
+        ProcessManager(ProcessManager&&) = delete;
+        ~ProcessManager();
+        ProcessManager& operator=(const ProcessManager&) = delete;
+        ProcessManager& operator=(ProcessManager&&) = delete;
+
+        Thread* CreateThread(Process* parentProcess);
+        Thread* ScheduleNextThread(uint32_t core);
+};
 
 #endif /* PROC_MGR_H */
 

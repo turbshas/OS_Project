@@ -11,6 +11,19 @@
 
 class Process {
     public:
+        enum class ProcessState;
+
+    private:
+        uint32_t _parentProcessId;
+        uint32_t _processId;
+        ProcessState _state;
+        bool _swapped;
+        uint32_t _returnCode;
+
+        DoublyLinkedList<mpu_region *> _memRegionList;
+        DoublyLinkedList<Thread *> _threadList;
+
+    public:
         enum class ProcessState {
             Created,
             Running,
@@ -37,16 +50,6 @@ class Process {
 
         Thread *createThread();
         void destroyThread(Thread *thread);
-
-    private:
-        uint32_t _parentProcessId;
-        uint32_t _processId;
-        ProcessState _state;
-        bool _swapped;
-        uint32_t _returnCode;
-
-        DoublyLinkedList<mpu_region *> _memRegionList;
-        DoublyLinkedList<Thread *> _threadList;
 };
 
 #endif

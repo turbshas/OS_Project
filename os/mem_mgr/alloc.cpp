@@ -170,7 +170,13 @@ class Skiplist {
             free_entry *next[NUM_FREE_LISTS];
 
             public:
+                free_entry() = delete;
                 free_entry(const free_entry& fe);
+                free_entry(free_entry&&) = delete;
+                ~free_entry();
+                free_entry& operator=(const free_entry&) = delete;
+                free_entry& operator=(free_entry&&) = delete;
+
                 void copy_from(const free_entry& fe);
                 unsigned skiplist() const { return which_skiplist_by_size(size); };
         };
@@ -223,8 +229,14 @@ class Skiplist {
 };
 
 Skiplist::free_entry::free_entry(const free_entry& fe)
+    : size(0)
 {
     copy_from(fe);
+}
+
+Skiplist::free_entry::~free_entry()
+{
+    // Free entries aren't allocated (just cast from a pointer to unused memory), so nothing to clean up
 }
 
 void

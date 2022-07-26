@@ -8,16 +8,16 @@
 #define MPU_MAX_TEX 0x7
 
 mpu_region::mpu_region()
+    : addr(0),
+    size(3),
+    srd(0),
+    te(static_cast<enum type_expansions>(TEX_CACHED_MEM | TEX_1)),
+    executable(false),
+    cacheable(false),
+    bufferable(true),
+    shareable(false),
+    ap(AP_NONE)
 {
-    addr = 0;
-    size = 3;
-    srd = 0;
-    te = static_cast<enum type_expansions>(TEX_CACHED_MEM | TEX_1);
-    executable = false;
-    cacheable = false;
-    bufferable = true;
-    shareable = false;
-    ap = AP_NONE;
 }
 
 bool

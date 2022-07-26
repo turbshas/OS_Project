@@ -25,6 +25,8 @@ struct CpuRegsOnStack {
     uint32_t PSR;
 
     CpuRegsOnStack();
+    CpuRegsOnStack(const CpuRegsOnStack&);
+    CpuRegsOnStack(CpuRegsOnStack&&);
 };
 
 #endif

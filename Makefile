@@ -49,6 +49,7 @@ COMPILE_FLAGS:=\
     -g \
     -Wall \
 	-Wextra \
+	-Weffc++ \
 	-fno-exceptions \
 	-fno-unwind-tables \
 	-fno-rtti

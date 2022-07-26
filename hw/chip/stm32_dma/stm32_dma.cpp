@@ -88,23 +88,23 @@ volatile DmaPeriph *const DMA2D = reinterpret_cast<volatile DmaPeriph *>(DMA2D_B
 #endif
 
 DmaRequest::DmaRequest()
-{
-    mem1 = nullptr;
-    mem2 = nullptr;
-    periph = nullptr;
-    len = 0;
+    : mem1(nullptr),
+    mem2(nullptr),
+    periph(nullptr),
+    len(0),
 
-    stream = 7;
-    priority = PRIO_HIGH;
-    periph_xfer_size = XFER_SIZE_BYTE;
-    mem_xfer_size = XFER_SIZE_BYTE;
-    periph_burst = BURST_NONE;
-    mem_burst = BURST_NONE;
-    periph_inc = false;
-    periph_inc_offset = PERIPH_INCR_PSIZE;
-    mem_inc = true;
-    mode = MODE_DIRECT;
-    fifo_threshold = FIFO_THRESH_1QUARTER;
+    stream(7),
+    priority(PRIO_HIGH),
+    periph_xfer_size(XFER_SIZE_BYTE),
+    mem_xfer_size(XFER_SIZE_BYTE),
+    periph_burst(BURST_NONE),
+    mem_burst(BURST_NONE),
+    periph_inc(false),
+    periph_inc_offset(PERIPH_INCR_PSIZE),
+    mem_inc(true),
+    mode(MODE_DIRECT),
+    fifo_threshold(FIFO_THRESH_1QUARTER)
+{
 }
 
 void

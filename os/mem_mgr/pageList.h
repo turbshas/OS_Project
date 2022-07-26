@@ -10,6 +10,13 @@ class PageList {
         PageSequence *prev;
         PageSequence *next;
 
+        PageSequence();
+        PageSequence(const PageSequence&) = delete;
+        PageSequence(PageSequence&&) = delete;
+        ~PageSequence();
+        PageSequence& operator=(const PageSequence&) = delete;
+        PageSequence& operator=(PageSequence&&) = delete;
+
         void insertAfter(PageSequence& insert);
         void insertBefore(PageSequence& insert);
         PageSequence *remove();

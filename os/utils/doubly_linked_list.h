@@ -23,11 +23,11 @@ class DoublyLinkedList {
         };
 
         DoublyLinkedList();
-        // Shouldn't really be copying or moving data structures in an OS environment
-        //
-        //DoublyLinkedList(const DoublyLinkedList& other);
-        //DoublyLinkedList(DoublyLinkedList&& other);
+        DoublyLinkedList(const DoublyLinkedList&) = delete;
+        DoublyLinkedList(DoublyLinkedList&&) = delete;
         ~DoublyLinkedList();
+        DoublyLinkedList& operator=(const DoublyLinkedList&) = delete;
+        DoublyLinkedList& operator=(DoublyLinkedList&&) = delete;
 
         void pushFront(const T& item);
         void pushBack(const T& item);
@@ -49,8 +49,12 @@ class DoublyLinkedList {
             T item;
 
             list_item();
+            list_item(const list_item&) = delete;
+            list_item(list_item&&) = delete;
             list_item(list_item *const prev, list_item *const next, const T& item);
             ~list_item();
+            list_item& operator=(const list_item&) = delete;
+            list_item& operator=(list_item&&) = delete;
         };
 
         size_t num_items;
@@ -107,18 +111,18 @@ void DoublyLinkedList<T>::Iterator::insertAfterCurrent(const T& item)
  */
 template <class T>
 DoublyLinkedList<T>::list_item::list_item()
+    : prev(nullptr),
+    next(nullptr),
+    item()
 {
-    prev = nullptr;
-    next = nullptr;
 }
 
 template <class T>
 DoublyLinkedList<T>::list_item::list_item(list_item *const prev_item, list_item *const next_item, const T& item_val)
+    : prev(prev_item),
+    next(next_item),
+    item(item_val)
 {
-    prev = prev_item;
-    next = next_item;
-    item = item_val;
-
     prev->next = this;
     next->prev = this;
 }
@@ -135,7 +139,8 @@ DoublyLinkedList<T>::list_item::~list_item()
  */
 template <class T>
 DoublyLinkedList<T>::DoublyLinkedList()
-    : sentinel()
+    : num_items(0),
+    sentinel()
 { }
 
 //DoublyLinkedList::DoublyLinkedList(const DoublyLinkedList& other) {}

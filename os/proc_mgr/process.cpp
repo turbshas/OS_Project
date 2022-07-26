@@ -10,12 +10,14 @@ static uint32_t getNextProcessId()
 }
 
 Process::Process()
+    : _parentProcessId(ROOT_PROCESS_ID),
+    _processId(getNextProcessId()),
+    _state(ProcessState::Created),
+    _swapped(false),
+    _returnCode(0),
+    _memRegionList(),
+    _threadList()
 {
-    _parentProcessId = ROOT_PROCESS_ID;
-    _processId = getNextProcessId();
-    _state = ProcessState::Created;
-    _swapped = false;
-    _returnCode = 0;
     _threadList.pushFront(new Thread(*this));
 }
 

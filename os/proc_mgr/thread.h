@@ -8,32 +8,12 @@ class Process;
 
 class Thread {
     friend class Process;
-
     public:
-        enum class ThreadState {
-            Created,
-            Ready,
-            Executing,
-            Blocked,
-            Zombie,
-            NUM_STATES,
-        };
-
-        Thread(Process &parentProcess);
-        ~Thread();
-
-        uint32_t getId()        const { return _threadId; };
-        Process *getProcess()   const { return _parentProcess; };
-        ThreadState getState()  const { return _state; };
-        Thread *getPrev()       const { return _prev; };
-        Thread *getNext()       const { return _next; };
-        bool isPrivileged()     const { return _privileged; };
-        bool isUsingMainStack() const { return _useMainStack; };
-        CpuRegsOnStack *getStackPointer() const { return _stack; };
+        enum class ThreadState;
 
     private:
         uint32_t _threadId;
-        Process *_parentProcess;
+        Process &_parentProcess;
 
         ThreadState _state; //TODO: figure out state machine
 
@@ -42,7 +22,34 @@ class Thread {
 
         bool _privileged;
         bool _useMainStack;
-        CpuRegsOnStack *_stack;
+        CpuRegsOnStack _stack;
+
+    public:
+        enum class ThreadState {
+            Created,
+            Ready,
+            Executing,
+            Blocked,
+            Zombie,
+            Dead,
+            NUM_STATES,
+        };
+
+        Thread(Process &);
+        Thread(const Thread&);
+        Thread(Thread&&);
+        ~Thread();
+        Thread& operator=(const Thread&) = delete;
+        Thread& operator=(Thread&&) = delete;
+
+        uint32_t getId()        const { return _threadId; };
+        Process& getProcess()   const { return _parentProcess; };
+        ThreadState getState()  const { return _state; };
+        Thread* getPrev()       const { return _prev; };
+        Thread* getNext()       const { return _next; };
+        bool isPrivileged()     const { return _privileged; };
+        bool isUsingMainStack() const { return _useMainStack; };
+        const CpuRegsOnStack& getStackPointer() const { return _stack; };
 };
 
 #endif
