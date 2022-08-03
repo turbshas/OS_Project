@@ -1,8 +1,10 @@
 #include "proc_mgr.h"
 
 ProcessManager::ProcessManager()
-    : _ranToCompletionThreadQueue(),
-    _blockedThreadQueue(),
+    : _processes(),
+    _readyThreadsRanToCompletion(),
+    _readyThreadsStoppedEarly(),
+    _blockedThreads(),
     _runningThreads()
 {
 }

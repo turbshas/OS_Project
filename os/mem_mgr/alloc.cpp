@@ -775,36 +775,3 @@ _realloc(const size_t req_size, void *const p) {
     const uintptr_t ret_int = reinterpret_cast<uintptr_t>(ret);
     return reinterpret_cast<void *>(ret_int + MALLOC_HEADER_SIZE);
 }
-
-void *operator new(size_t size)
-{
-    void *p = _malloc(size);
-    return p;
-}
-
-void *operator new[](size_t size)
-{
-    void *p = _malloc(size);
-    return p;
-}
-
-void operator delete(void *p) noexcept
-{
-    _free(p);
-}
-
-void operator delete[](void *p) noexcept
-{
-    _free(p);
-}
-
-void operator delete(void *p, const size_t) noexcept
-{
-    _free(p);
-}
-
-void operator delete[](void *p, const size_t) noexcept
-{
-    _free(p);
-}
-

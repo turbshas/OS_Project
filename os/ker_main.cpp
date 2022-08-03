@@ -1,6 +1,7 @@
 #include "alloc.h"
 #include "drivers.h"
 #include "mem_mgr.h"
+#include "static_circular_buffer.h"
 #include "stm32_rtc.h"
 
 /*
@@ -10,6 +11,7 @@
 void
 ker_main(void)
 {
+    StaticCircularBuffer<size_t, 8> testBuffer;
     // Test stuff
     usart_driver_init();
     usart_send_string(USART3, "hello world\n", sizeof("hello world\n"));

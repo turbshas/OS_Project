@@ -29,8 +29,10 @@
  */
 class ProcessManager {
     private:
-        DoublyLinkedList<Thread *> _ranToCompletionThreadQueue;
-        DoublyLinkedList<Thread *> _blockedThreadQueue;
+        DoublyLinkedList<Process *> _processes;
+        DoublyLinkedList<Thread *> _readyThreadsRanToCompletion;
+        DoublyLinkedList<Thread *> _readyThreadsStoppedEarly;
+        DoublyLinkedList<Thread *> _blockedThreads;
         Thread* _runningThreads[NUM_CPUS];
 
     public:
