@@ -1,10 +1,5 @@
 {
-    "C_Cpp.default.cppStandard": "c++17",
-    "C_Cpp.default.cStandard": "gnu11",
-    "C_Cpp.default.compilerPath": "/usr/bin/arm-none-eabi-g++",
-    "C_Cpp.default.intelliSenseMode": "linux-gcc-arm",
-    "C_Cpp.intelliSenseCacheSize": 5120,
-    "files.associations": {
-        "new": "cpp"
-    }
+    "makefile.phonyOnlyTargets": true,
+    "makefile.launchConfigurations": [
+    ]
 }

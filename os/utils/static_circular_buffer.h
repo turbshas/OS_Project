@@ -5,7 +5,8 @@
 #include <cstdio>
 #include <cstdlib>
 
-namespace details{
+namespace details
+{
     template <typename T>
     class StaticCircularBufferBase
     {
@@ -151,7 +152,7 @@ class StaticCircularBuffer : public details::StaticCircularBufferBase<T>
     public:
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Weffc++"
-        // _data shouldn't me initialized in member list - this causes it to zero-initialize.
+        // _data shouldn't be initialized in member list - this causes it to zero-initialize.
         // That introduces a use of memset to zero the entire array, which is unnecessary as
         // the usage of the array is already tracked by the base class.
         StaticCircularBuffer()

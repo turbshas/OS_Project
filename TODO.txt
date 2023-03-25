@@ -1,3 +1,10 @@
+chip level changes:
+- make each component (dma, exti, etc.) inherit from common base
+  - template type T for register layout struct
+  - constructor accepts memory address of register struct
+  - only stores pointer to struct, dereferences when accessing
+  - common function that accepts pointer to register and value to set
+
 stm32_dma:
  - DMA interrupt support
  - Support for multiple requests to a stream

@@ -49,10 +49,10 @@ class SysControlBlock {
     uint32_t AFSR;  // Auxiliary Fault Status
 
     public:
-        void disable_sys_tick(void) volatile { CSR &= ~CSR_TICKINT; };
-        void enable_sys_tick(void) volatile { CSR |= CSR_TICKINT; };
-        void set_pending_pendsv(void) volatile { ICSR |= ICSR_PENDSVSET; };
-        void clear_pending_pendsv(void) volatile { ICSR |= ICSR_PENDSVCLR; };
+        void disable_sys_tick(void) volatile { CSR = CSR & ~CSR_TICKINT; };
+        void enable_sys_tick(void) volatile { CSR = CSR | CSR_TICKINT; };
+        void set_pending_pendsv(void) volatile { ICSR = ICSR | ICSR_PENDSVSET; };
+        void clear_pending_pendsv(void) volatile { ICSR = ICSR | ICSR_PENDSVCLR; };
 
         void initialize(void) volatile;
 };

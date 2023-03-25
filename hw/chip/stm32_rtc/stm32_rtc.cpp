@@ -77,22 +77,22 @@ void
 RtcPeriph::disable_write_protection(void) volatile
 {
     PWR->disable_bd_write_protection();
-    WPR |= 0xca;
-    WPR |= 0x53;
+    WPR = WPR | 0xca;
+    WPR = WPR | 0x53;
 }
 
 void
 RtcPeriph::enable_write_protection(void) volatile
 {
     /* Any invalid key will re-enable write protection */
-    WPR |= 0xff;
+    WPR = WPR | 0xff;
     PWR->enable_bd_write_protection();
 }
 
 int
 RtcPeriph::enter_init_mode(void) volatile
 {
-    ISR |= RTC_ISR_INIT;
+    ISR = ISR | RTC_ISR_INIT;
 
     /* Takes 1-2 RTCCLK cycles to actually enter initialization mode */
     unsigned counter = 0;
@@ -108,14 +108,14 @@ RtcPeriph::enter_init_mode(void) volatile
 void
 RtcPeriph::exit_init_mode(void) volatile
 {
-    ISR &= ~RTC_ISR_INIT;
+    ISR = ISR & ~RTC_ISR_INIT;
 }
 
 void
 RtcPeriph::disable_wut(void) volatile
 {
     /* Disable WUT */
-    CR &= ~RTC_CR_WUTE;
+    CR = CR & ~RTC_CR_WUTE;
 
     /* Wait for write flag to go high */
     while ((ISR & RTC_ISR_WUTWF) == 0) { }
@@ -124,7 +124,7 @@ RtcPeriph::disable_wut(void) volatile
 void
 RtcPeriph::enable_wut(void) volatile
 {
-    CR |= RTC_CR_WUTE;
+    CR = CR | RTC_CR_WUTE;
 }
 
 int
@@ -219,8 +219,8 @@ RtcPeriph::exit_dst(void) volatile
      * Subtract an hour, then clear bkp bit.
      * Bkp bit = 0 -> not in DST
      */
-    CR |= RTC_CR_SUB1H;
-    CR &= ~RTC_CR_BKP;
+    CR = CR | RTC_CR_SUB1H;
+    CR = CR & ~RTC_CR_BKP;
 
     return 0;
 }
@@ -247,8 +247,8 @@ RtcPeriph::enter_dst(void) volatile
      * Add an hour, then set bkp bit.
      * Bkp bit = 1 -> currently in DST
      */
-    CR |= RTC_CR_ADD1H;
-    CR |= RTC_CR_BKP;
+    CR = CR | RTC_CR_ADD1H;
+    CR = CR | RTC_CR_BKP;
 
     return 0;
 }
@@ -256,13 +256,13 @@ RtcPeriph::enter_dst(void) volatile
 void
 RtcPeriph::enable_WUT_Interrupt(void) volatile
 {
-    CR |= RTC_CR_WUTIE;
+    CR = CR | RTC_CR_WUTIE;
 }
 
 void
 RtcPeriph::disable_WUT_Interrupt(void) volatile
 {
-    CR &= ~RTC_CR_WUTIE;
+    CR = CR & ~RTC_CR_WUTIE;
 }
 
 void
@@ -272,12 +272,12 @@ RtcPeriph::init(void) volatile
     if (enter_init_mode() == 0) {
         /* Set prescaler values for a 1 Hz clock */
         /* Required to do sync first, then async */
-        PRER &= ~(RTC_PRER_ASYNC | RTC_PRER_SYNC);
-        PRER |= 255u & RTC_PRER_SYNC;
-        PRER |= (127u << RTC_PRER_ASYNC_SHIFT) & RTC_PRER_ASYNC;
+        PRER = PRER & ~(RTC_PRER_ASYNC | RTC_PRER_SYNC);
+        PRER = PRER | (255u & RTC_PRER_SYNC);
+        PRER = PRER | ((127u << RTC_PRER_ASYNC_SHIFT) & RTC_PRER_ASYNC);
 
         /* Set time format to 24-hour time */
-        CR &= ~RTC_CR_FMT;
+        CR = CR & ~RTC_CR_FMT;
     }
 
     /* Setup a 1 Hz wakeup timer:
@@ -286,10 +286,10 @@ RtcPeriph::init(void) volatile
      *  - WUTR set to 16384 (2 ^ 15)
      */
     disable_wut();
-    CR |= (0x3 << RTC_CR_OSEL_SHIFT) & RTC_CR_OSEL;
-    CR |= (0x3 << RTC_CR_WUCKSEL_SHIFT) & RTC_CR_WUCKSEL;
-    WUTR &= ~0xffff;
-    WUTR |= (1u << 15);
+    CR = CR | ((0x3 << RTC_CR_OSEL_SHIFT) & RTC_CR_OSEL);
+    CR = CR | ((0x3 << RTC_CR_WUCKSEL_SHIFT) & RTC_CR_WUCKSEL);
+    WUTR = WUTR & ~0xffff;
+    WUTR = WUTR | (1u << 15);
     enable_wut();
 
     exit_init_mode();

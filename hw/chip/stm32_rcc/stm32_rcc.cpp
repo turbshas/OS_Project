@@ -43,9 +43,9 @@ void
 RccPeriph::periph_cmd(volatile uint32_t *const reg, const uint32_t periph, const bool state) volatile
 {
     if (state) {
-        *reg |= periph;
+        *reg = *reg | periph;
     } else {
-        *reg &= ~periph;
+        *reg = *reg & ~periph;
     }
 }
 
@@ -152,7 +152,7 @@ RccPeriph::init() volatile
      *  - Main PLL divider for main system clock to 6 (SYSCLCK = VCO / 6)
      *  - Main PLL divider for USB OTG FS, SDIO, and RNG to 8 (OTG FS, SDIO, RNG = VCO / 8)
      */
-    PLLCFGR &= ~RCC_PLLCFGR_PLLSRC;
+    PLLCFGR = PLLCFGR & ~RCC_PLLCFGR_PLLSRC;
     PLLCFGR = (0x8  << RCC_PLLCFGR_PLLQ_SHIFT)
                  | (0x2  << RCC_PLLCFGR_PLLP_SHIFT)
                  | (0xc0 << RCC_PLLCFGR_PLLN_SHIFT)
@@ -165,8 +165,8 @@ RccPeriph::init() volatile
      *  - Do not bypass HSE with external clock
      *  - Disable clock security system
      */
-    CR |= RCC_CR_HSION | RCC_CR_PLLON;
-    CR &= ~(RCC_CR_HSEON | RCC_CR_HSEBYP | RCC_CR_CSSON);
+    CR = CR | (RCC_CR_HSION | RCC_CR_PLLON);
+    CR = CR & ~(RCC_CR_HSEON | RCC_CR_HSEBYP | RCC_CR_CSSON);
 
     /* Wait for PLL to be ready */
     while ((CR & RCC_CR_PLLRDY) == 0) { }
@@ -184,7 +184,7 @@ RccPeriph::init() volatile
     while (((CFGR & RCC_CFGR_SWS) >> RCC_CFGR_SWS_SHIFT) != 0x2) { }
 
     /* Enable RTC, set clock to LSE */
-    BDCR |= RCC_BDCR_RTCEN | (0x1 << RCC_BDCR_RTCSEL_SHIFT);
+    BDCR = BDCR | (RCC_BDCR_RTCEN | (0x1 << RCC_BDCR_RTCSEL_SHIFT));
 
     /* Enable USARTs */
     APB1_periph_cmd(UART5, true);

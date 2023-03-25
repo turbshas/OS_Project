@@ -17,7 +17,7 @@ int
 ExtiPeriph::mask_interrupt(const uint32_t interrupt_num) volatile
 {
     CHECK_VALID_INTERRUPT(interrupt_num);
-    IMR &= ~(1u << interrupt_num);
+    IMR = IMR & ~(1u << interrupt_num);
     return 0;
 }
 
@@ -25,7 +25,7 @@ int
 ExtiPeriph::unmask_interrupt(const uint32_t interrupt_num) volatile
 {
     CHECK_VALID_INTERRUPT(interrupt_num);
-    IMR |= (1u << interrupt_num);
+    IMR = IMR | (1u << interrupt_num);
     return 0;
 }
 
@@ -33,7 +33,7 @@ int
 ExtiPeriph::mask_event(const uint32_t interrupt_num) volatile
 {
     CHECK_VALID_INTERRUPT(interrupt_num);
-    EMR &= ~(1u << interrupt_num);
+    EMR = EMR & ~(1u << interrupt_num);
     return 0;
 }
 
@@ -41,7 +41,7 @@ int
 ExtiPeriph::unmask_event(const uint32_t interrupt_num) volatile
 {
     CHECK_VALID_INTERRUPT(interrupt_num);
-    EMR |= (1u << interrupt_num);
+    EMR = EMR | (1u << interrupt_num);
     return 0;
 }
 
@@ -49,7 +49,7 @@ int
 ExtiPeriph::set_rising_trigger(const uint32_t interrupt_num) volatile
 {
     CHECK_VALID_INTERRUPT(interrupt_num);
-    RTSR |= (1u << interrupt_num);
+    RTSR = RTSR | (1u << interrupt_num);
     return 0;
 }
 
@@ -57,7 +57,7 @@ int
 ExtiPeriph::clear_rising_trigger(const uint32_t interrupt_num) volatile
 {
     CHECK_VALID_INTERRUPT(interrupt_num);
-    RTSR &= ~(1u << interrupt_num);
+    RTSR = RTSR & ~(1u << interrupt_num);
     return 0;
 }
 
@@ -65,7 +65,7 @@ int
 ExtiPeriph::set_falling_trigger(const uint32_t interrupt_num) volatile
 {
     CHECK_VALID_INTERRUPT(interrupt_num);
-    FTSR |= (1u << interrupt_num);
+    FTSR = FTSR | (1u << interrupt_num);
     return 0;
 }
 
@@ -73,7 +73,7 @@ int
 ExtiPeriph::clear_falling_trigger(const uint32_t interrupt_num) volatile
 {
     CHECK_VALID_INTERRUPT(interrupt_num);
-    FTSR &= ~(1u << interrupt_num);
+    FTSR = FTSR & ~(1u << interrupt_num);
     return 0;
 }
 
@@ -81,7 +81,7 @@ int
 ExtiPeriph::set_swi(const uint32_t interrupt_num) volatile
 {
     CHECK_VALID_INTERRUPT(interrupt_num);
-    SWIER |= (1u << interrupt_num);
+    SWIER = SWIER | (1u << interrupt_num);
     return 0;
 }
 
@@ -89,7 +89,7 @@ int
 ExtiPeriph::clear_swi(const uint32_t interrupt_num) volatile
 {
     CHECK_VALID_INTERRUPT(interrupt_num);
-    SWIER &= ~(1u << interrupt_num);
+    SWIER = SWIER & ~(1u << interrupt_num);
     return 0;
 }
 
@@ -104,7 +104,7 @@ int
 ExtiPeriph::clear_pending(const uint32_t interrupt_num) volatile
 {
     CHECK_VALID_INTERRUPT(interrupt_num);
-    PR |= (1u << interrupt_num);
+    PR = PR | (1u << interrupt_num);
     return 0;
 }
 

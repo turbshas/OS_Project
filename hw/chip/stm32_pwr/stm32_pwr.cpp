@@ -9,13 +9,13 @@ volatile PwrPeriph *const PWR = reinterpret_cast<volatile PwrPeriph *>(PWR_BASE)
 void
 PwrPeriph::disable_bd_write_protection() volatile
 {
-    PWR->CR |= PWR_CR_DBP;
+    PWR->CR = PWR->CR | PWR_CR_DBP;
 }
 
 void
 PwrPeriph::enable_bd_write_protection() volatile
 {
-    PWR->CR &= ~PWR_CR_DBP;
+    PWR->CR = PWR->CR & ~PWR_CR_DBP;
 }
 
 void

@@ -149,7 +149,7 @@ Mpu::region_enable(const unsigned num) volatile
     rnr |= num;
     RNR = rnr;
 
-    RASR |= MPU_RASR_EN;
+    RASR = RASR | MPU_RASR_EN;
     return 0;
 }
 
@@ -165,7 +165,7 @@ Mpu::region_disable(const unsigned num) volatile
     rnr |= num;
     RNR = rnr;
 
-    RASR &= ~MPU_RASR_EN;
+    RASR = RASR & ~MPU_RASR_EN;
     return 0;
 }
 
@@ -173,8 +173,8 @@ void
 Mpu::init(void) volatile
 {
     /* Enable default mapping in privileged mode, disable MPU in Hard Faults */
-    CTRL |= MPU_CTRL_PRIVDEFENA;
-    CTRL &= ~MPU_CTRL_HFNMIENA;
-    CTRL |= MPU_CTRL_ENABLE;
+    CTRL = CTRL | MPU_CTRL_PRIVDEFENA;
+    CTRL = CTRL & ~MPU_CTRL_HFNMIENA;
+    CTRL = CTRL | MPU_CTRL_ENABLE;
 }
 

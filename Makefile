@@ -44,7 +44,7 @@ LINKER_FLAGS:=\
 
 COMPILE_FLAGS:=\
 	$(COMPILE_AND_LINK_FLAGS) \
-	-std=c++17 \
+	-std=c++20 \
     -O0 \
     -g \
     -Wall \

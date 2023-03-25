@@ -17,13 +17,13 @@ const usart_t USART6 = reinterpret_cast<usart_t>(USART6_BASE);
 void
 UsartPeriph::enable() volatile
 {
-    CR1 |= USART_CR1_UE;
+    CR1 = CR1 | USART_CR1_UE;
 }
 
 void
 UsartPeriph::disable() volatile
 {
-    CR1 &= ~USART_CR1_UE;
+    CR1 = CR1 & ~USART_CR1_UE;
 }
 
 void
@@ -54,14 +54,14 @@ UsartPeriph::init() volatile
     enable();
 
     /* Set BRR to 416.6875 */
-    BRR |= (416u << USART_BRR_MANT_SHIFT) & USART_BRR_MANT;
-    BRR |= 11u & USART_BRR_FRAC;
+    BRR = BRR | ((416u << USART_BRR_MANT_SHIFT) & USART_BRR_MANT);
+    BRR = BRR | (11u & USART_BRR_FRAC);
 
     /* Set CR1:
      *  - Enable transmitter
      *  - Enable receiver
      */
-    CR1 |= USART_CR1_TE | USART_CR1_RE;
+    CR1 = CR1 | (USART_CR1_TE | USART_CR1_RE);
 
     /* Set GTPR (Not yet implemented in QEMU) */
     //USART1->GTPR |= 0x1;

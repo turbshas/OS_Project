@@ -18,8 +18,8 @@ void
 SyscfgPeriph::set_exti_reg(const int reg, const int shift_amt, const int value) volatile
 {
     const uint32_t shifted_val = (value & 0xf) << shift_amt;
-    EXTICR[reg] &= ~(0xf << shift_amt);
-    EXTICR[reg] |= shifted_val;
+    EXTICR[reg] = EXTICR[reg] & ~(0xf << shift_amt);
+    EXTICR[reg] = EXTICR[reg] | shifted_val;
 }
 
 void

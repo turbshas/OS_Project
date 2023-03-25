@@ -301,7 +301,7 @@ void
 DmaPeriph::set_config(const uint8_t stream, const struct dma_stream_regs &stream_cfg) volatile
 {
     /* Disable DMA stream so we can modify the registers */
-    streams[stream].CR &= ~DMA_SxCR_EN;
+    streams[stream].CR = streams[stream].CR & ~DMA_SxCR_EN;
     /*
      * Sets the registers of the given stream to the given values.
      * Assumes the stream is already disabled.
@@ -372,7 +372,7 @@ DmaPeriph::mem_to_periph(const DmaRequest &req) volatile
     stream_cfg.CR |= DMA_DIR_M2P << DMA_SxCR_DIR_SHIFT;
 
     set_config(req.stream, stream_cfg);
-    streams[req.stream].CR |= DMA_SxCR_EN;
+    streams[req.stream].CR = streams[req.stream].CR | DMA_SxCR_EN;
 
     return 0;
 }

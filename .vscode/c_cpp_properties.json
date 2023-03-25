@@ -2,33 +2,23 @@
     "configurations": [
         {
             "name": "STM32F2/4",
-            "intelliSenseMode": "linux-gcc-arm",
             "includePath": [
-                "${workspaceRoot}",
-                "${workspaceRoot}/hw",
-                "${workspaceRoot}/hw/chip",
-                "${workspaceRoot}/hw/chip/stm32_dma",
-                "${workspaceRoot}/hw/chip/stm32_exti",
-                "${workspaceRoot}/hw/chip/stm32_pwr",
-                "${workspaceRoot}/hw/chip/stm32_rcc",
-                "${workspaceRoot}/hw/chip/stm32_rtc",
-                "${workspaceRoot}/hw/chip/stm32_syscfg",
-                "${workspaceRoot}/hw/chip/stm32_usart",
-                "${workspaceRoot}/hw/cpu",
-                "${workspaceRoot}/hw/cpu/mpu",
-                "${workspaceRoot}/hw/cpu/nvic",
-                "${workspaceRoot}/hw/cpu/sys_ctl_block",
-                "${workspaceRoot}/hw/cpu/sys_timer",
-                "${workspaceRoot}/hw/drivers",
-                "${workspaceRoot}/hw/drivers/usart_driver",
-                "${workspaceRoot}/os",
-                "${workspaceRoot}/os/mem_mgr",
-                "${workspaceRoot}/os/proc_mgr",
-                "${workspaceRoot}/os/utils"
+                "${workspaceFolder}/hw/**",
+                "${workspaceFolder}/os/**"
             ],
+            "defines": [],
             "compilerPath": "/usr/bin/arm-none-eabi-g++",
             "cStandard": "gnu11",
-            "cppStandard": "c++17",
+            "cppStandard": "c++20",
+            "intelliSenseMode": "linux-gcc-arm",
+            "compilerArgs": [
+                "-Wall",
+                "-Wextra",
+                "-Weffc++",
+                "-fno-exceptions",
+                "-fno-unwind-tables",
+                "-fno-rtti"
+            ],
             "configurationProvider": "ms-vscode.makefile-tools"
         }
     ],
