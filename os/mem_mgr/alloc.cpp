@@ -150,7 +150,7 @@ which_skiplist_by_size(const size_t size)
 
 class Skiplist {
     public:
-        Skiplist(void *(*const alloc_func)(const size_t size));
+        Skiplist(AllocFunc alloc_func);
         void *malloc(const size_t size);
         void *resize(const size_t old_size, const size_t new_size, void *const p);
         void free(const size_t size, void *const p);
@@ -283,7 +283,7 @@ Skiplist::list_walker::advance_links()
     }
 }
 
-Skiplist::Skiplist(void *(*const alloc_func)(const size_t size))
+Skiplist::Skiplist(AllocFunc alloc_func)
     : total_mem(0),
       total_free(0),
       block_alloc_func(alloc_func)
@@ -628,8 +628,8 @@ static Skiplist free_list_start(nullptr);
 /* Initializes structures required for allocator to work */
 //TODO: skiplist needs an allocation function from mem_mgr to get blocks of mem
 void
-alloc_init(void) {
-    free_list_start = Skiplist(allocatePages);
+alloc_init(AllocFunc alloc_func) {
+    free_list_start = Skiplist(alloc_func);
 }
 
 /* The _ker_* functions assume the caller enforces the restrictions

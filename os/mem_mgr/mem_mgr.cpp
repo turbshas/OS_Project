@@ -1,7 +1,6 @@
 #include "chip_common.h"
 #include "mem_mgr.h"
 #include "mpu.h"
-#include "pageList.h"
 
 /* What mem_mgr needs to do:
  *   - Allocate chunks of memory for the malloc implementation
@@ -24,35 +23,43 @@
 extern unsigned int _ALLOCABLE_MEM;
 extern unsigned int _DATA_RAM_START;
 
-static void *const ALLOCABLE_MEM_START = &_ALLOCABLE_MEM;
-static size_t NUM_ALLOCABLE_PAGES;
-static size_t ALLOCABLE_MEM_SIZE;
-static void *ALLOCATION_START;
+MemoryManager memoryManager;
 
-static PageList pageList;
-
-void *allocatePages(const size_t size) {
-    const size_t roundedDown = (size - 1) & ~(PAGE_SIZE - 1);
-    const size_t roundedUp = roundedDown + PAGE_SIZE;
-    const size_t numPages = roundedUp / PAGE_SIZE;
-    return pageList.allocatePages(numPages);
+MemoryManager::MemoryManager()
+    : _pageList()
+{
 }
 
 void
-mem_mgr_init()
+MemoryManager::Initialize()
 {
     const uintptr_t dataRamStart = reinterpret_cast<uintptr_t>(&_DATA_RAM_START);
     const uintptr_t allocableMem = reinterpret_cast<uintptr_t>(&_ALLOCABLE_MEM);
-    const size_t allocableMemSize = dataRamStart + SRAM_SIZE - allocableMem;
-    
-    // Number of whole pages - ignore the extra. Reserve 1 page for kernel stack (at end of mem region)
-    NUM_ALLOCABLE_PAGES = (allocableMemSize / PAGE_SIZE) - 1;
-    ALLOCABLE_MEM_SIZE = NUM_ALLOCABLE_PAGES * PAGE_SIZE;
+    // All memory not used by static data.
+    const size_t totalAllocableMem = dataRamStart + SRAM_SIZE - allocableMem;
+    // Only care about whole pages, so round down to nearest multiple of page size.
+    const size_t allocablePages = totalAllocableMem / PAGE_SIZE;
     // Allocation needs to start at an aligned address - round up to nearest page boundary
-    const uintptr_t alignedAllocationStart = ((allocableMem - 1) & ~(PAGE_SIZE - 1)) + PAGE_SIZE;
-    ALLOCATION_START = reinterpret_cast<void *>(alignedAllocationStart);
-    pageList.initialize(NUM_ALLOCABLE_PAGES, ALLOCATION_START);
+    const uintptr_t alignedAllocationStart =
+        (
+            (allocableMem - 1) // When the value is already a multiple of PAGE_SIZE, this prevents adding an extra PAGE_SIZE amount
+            & ~(PAGE_SIZE - 1) // Rounds down to aligned amount
+        )
+        + PAGE_SIZE; // Add 1 back to recover the missed amount
+    
+    // Memory will be reserved for the kernel when its process is initialized.
+    // TODO: initial stack (kernel stack) needs to be un-allocable
+    const size_t allocableMemSize = allocablePages * PAGE_SIZE;
+    void *const allocationStart = reinterpret_cast<void *>(alignedAllocationStart);
+    _pageList.freePages(allocablePages, allocationStart);
 
     MPU->init();
 }
 
+void
+MemoryManager::AllocatePages(Process *const process, const size_t size) {
+    const size_t roundedDown = (size - 1) & ~(PAGE_SIZE - 1);
+    const size_t roundedUp = roundedDown + PAGE_SIZE;
+    const size_t numPages = roundedUp / PAGE_SIZE;
+    return _pageList.allocatePages(numPages);
+}

@@ -2,16 +2,21 @@
 #define MEM_MGR_H
 
 #include <cstdio>
+#include "pageList.h"
+#include "process.h"
 
 #define PAGE_SIZE (2 * 1024)
 
-class MemMgr {
+class MemoryManager {
+    PageList _pageList;
+
     public:
-        MemMgr();
+        MemoryManager();
+        void Initialize();
+        void AllocatePages(Process *const process, const size_t size);
 };
 
-void *allocatePages(const size_t size);
-void mem_mgr_init();
+extern MemoryManager memoryManager;
 
 #endif /* MEM_MGR_H */
 

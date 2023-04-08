@@ -65,7 +65,7 @@ SECTIONS
     /* Location of .ccmram section in binary file */
     _CCM_ROM_START = ADDR(_DATA_ROM_START) + SIZEOF(.data);
 
-    . = 0x10000000;
+    . = ORIGIN(CCMRAM0);
     .ccmram : AT(_CCM_ROM_START)
     {
         _CCM_RAM_START = .;
@@ -76,7 +76,7 @@ SECTIONS
     _CCMRAM_SIZE = SIZEOF(.ccmram);
 #endif
 
-    . = 0x20000000;
+    . = ORIGIN(SRAM0);
 
     /* Section for data in RAM (file scope variables)
      * Loaded into the flash, then copied from the flash to RAM during boot

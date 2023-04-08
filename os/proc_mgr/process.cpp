@@ -2,7 +2,7 @@
 
 #define ROOT_PROCESS_ID 1
 
-static uint32_t processCounter = 0;
+static uint32_t processCounter = 1;
 static uint32_t getNextProcessId()
 {
     processCounter++;

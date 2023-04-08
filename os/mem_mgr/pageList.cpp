@@ -53,18 +53,6 @@ PageList::~PageList()
     // Therefore, nothing to deconstruct.
 }
 
-void
-PageList::initialize(const size_t numPages, void *const startAddr)
-{
-    PageSequence *const initialSequence = static_cast<PageSequence *>(startAddr);
-    initialSequence->numPages = numPages;
-    initialSequence->next = &sentinel;
-    initialSequence->prev = &sentinel;
-
-    sentinel.next = initialSequence;
-    sentinel.prev = initialSequence;
-}
-
 bool
 PageList::areSequencesAdjacent(const PageSequence& first, const PageSequence& second) const
 {

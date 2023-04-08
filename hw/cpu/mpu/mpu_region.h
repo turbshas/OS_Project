@@ -19,7 +19,7 @@ class mpu_region {
         enum type_expansions {
             TEX_0 = 0x0, TEX_1 = 0x1, TEX_2 = 0x2, TEX_CACHED_MEM = 0x4
         };
-        /* Format of these is MPU_AP_(1)_(2) where (1) is priv and (2) is unpriv */
+        /* Format of these is AP_(1)_(2) where (1) is priv and (2) is unpriv */
         enum access_permissions { AP_NONE = 0, AP_RW_NONE, AP_RW_RO, AP_RW_RW,
                                   AP_RSVD,     AP_RO_NONE, AP_RO_RO, AP_RO_RO2 };
         mpu_region();
@@ -27,7 +27,7 @@ class mpu_region {
         bool check_valid() const;
         /* Requirements on address and size:
          * Size must be greater than 3 and less than 32
-         * The only valid bits of address are 31:(Size + 1)
+         * The only valid bits of address are 31 downto (Size + 1)
          */
         uint32_t get_addr() const { return addr; };
         uint32_t get_size() const { return size; };

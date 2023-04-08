@@ -3,6 +3,8 @@
 
 #include <cstdio>
 
+/// @brief Circular doubly-lined list of free memory blocks where the address of each item in the list is the beginning of the block.
+/// @remark This is similar to @see{DoublyLinkedList} but that can't be used as it does dynamic allocation. Perhaps that can be changed.
 class PageList {
     // Will be casting the start of each sequence to a pointer to one of these
     struct PageSequence {
@@ -29,7 +31,6 @@ class PageList {
     public:
         PageList();
         ~PageList();
-        void initialize(const size_t numPages, void *const startAddr);
         void *allocatePages(const size_t numPages);
         void freePages(const size_t numPages, void *startAddr);
 };
