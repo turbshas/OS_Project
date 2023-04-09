@@ -4,52 +4,54 @@
 #include <cstdint>
 
 #include "doubly_linked_list.h"
-#include "mpu.h"
+#include "mem_region.hpp"
 #include "thread.h"
 
 #define MAX_MPU_REGIONS 8
 
-class Process {
-    public:
-        enum class ProcessState;
+class Process
+{
+public:
+    enum class ProcessState;
 
-    private:
-        uint32_t _parentProcessId;
-        uint32_t _processId;
-        ProcessState _state;
-        bool _swapped;
-        uint32_t _returnCode;
+private:
+    uint32_t _parentProcessId;
+    uint32_t _processId;
+    ProcessState _state;
+    bool _swapped;
+    uint32_t _returnCode;
 
-        DoublyLinkedList<mpu_region *> _memRegionList;
-        DoublyLinkedList<Thread *> _threadList;
+    DoublyLinkedList<MemRegion> _memRegionList;
+    DoublyLinkedList<Thread *> _threadList;
 
-    public:
-        enum class ProcessState {
-            Created,
-            Running,
-            Blocked,
-            Zombie,
-            Traced,
-            NUM_STATES,
-        };
+public:
+    enum class ProcessState
+    {
+        Created,
+        Running,
+        Blocked,
+        Zombie,
+        Traced,
+        NUM_STATES,
+    };
 
-        Process();
-        ~Process();
+    Process();
+    ~Process();
 
-        void readyForExec();
-        void finishExec();
+    void ReadyForExec();
+    void FinishExec();
 
-        void swapOut();
-        void swapIn();
+    void SwapOut();
+    void SwapIn();
 
-        void dispatch();
-        void suspend();
+    void Dispatch();
+    void Suspend();
 
-        void sleep();
-        void wake();
+    void Sleep();
+    void Wake();
 
-        Thread *createThread();
-        void destroyThread(Thread *thread);
+    Thread *CreateThread();
+    void DestroyThread(Thread *thread);
 };
 
 #endif

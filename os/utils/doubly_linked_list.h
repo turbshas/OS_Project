@@ -9,66 +9,85 @@
 /// @brief Circular Doubly-linked List
 /// @tparam T Stored Data Type
 template <class T>
-class DoublyLinkedList {
+class DoublyLinkedList
+{
     struct list_item;
 
     public:
-        class Iterator {
-            public:
-                Iterator(const list_item& start);
+    class Iterator
+    {
+        public:
+        Iterator();
+        Iterator(const list_item& start);
+        ~Iterator();
+        Iterator& operator=(const Iterator&);
+        bool operator==(const Iterator&);
+        bool operator!=(const Iterator&);
+        const Iterator& operator++(); // Pre-increment
+        Iterator operator++(int);     // Post-increment
+        const Iterator& operator--(); // Pre-increment
+        Iterator operator--(int);     // Post-increment
 
-                void moveNext();
-                T& currentItem() const;
-                T removeCurrent();
-                void insertBeforeCurrent(const T& item);
-                void insertAfterCurrent(const T& item);
+        void moveNext();
+        T& currentItem() const;
+        T removeCurrent();
+        void insertBeforeCurrent(const T& item);
+        void insertAfterCurrent(const T& item);
 
-            private:
-                list_item *_current_item;
-        };
+        private:
+        list_item* _current_item;
+    };
 
-        DoublyLinkedList();
-        DoublyLinkedList(const DoublyLinkedList&);
-        DoublyLinkedList(DoublyLinkedList&&);
-        ~DoublyLinkedList();
-        DoublyLinkedList& operator=(const DoublyLinkedList&) = delete;
-        DoublyLinkedList& operator=(DoublyLinkedList&&) = delete;
+    DoublyLinkedList();
+    DoublyLinkedList(const DoublyLinkedList&);
+    DoublyLinkedList(DoublyLinkedList&&);
+    ~DoublyLinkedList();
+    DoublyLinkedList& operator=(const DoublyLinkedList&) = delete;
+    DoublyLinkedList& operator=(DoublyLinkedList&&) = delete;
 
-        void pushFront(const T& item);
-        void pushBack(const T& item);
-        T popFront();
-        T popBack();
+    void pushFront(const T& item);
+    void pushBack(const T& item);
+    T popFront();
+    T popBack();
 
-        size_t size() const { return _num_items; };
-        bool empty() const { return _num_items == 0; };
-        void clear();
-        T removeItem(const size_t index);
+    size_t size() const { return _num_items; };
+    bool empty() const { return _num_items == 0; };
+    void clear();
+    T removeItem(const size_t index);
 
-        Iterator getIter() const;
-        T& operator[](const size_t index) const;
+    Iterator begin() const;
+    Iterator end() const;
+    T& operator[](const size_t index) const;
 
     private:
-        struct list_item {
-            list_item *prev;
-            list_item *next;
-            T item;
+    struct list_item
+    {
+        list_item* prev;
+        list_item* next;
+        T item;
 
-            list_item();
-            list_item(const list_item&) = delete;
-            list_item(list_item&&) = delete;
-            list_item(list_item *const prev, list_item *const next, const T& item);
-            ~list_item();
-            list_item& operator=(const list_item&) = delete;
-            list_item& operator=(list_item&&) = delete;
-        };
+        list_item();
+        list_item(const list_item&) = delete;
+        list_item(list_item&&) = delete;
+        list_item(list_item* const prev, list_item* const next, const T& item);
+        ~list_item();
+        list_item& operator=(const list_item&) = delete;
+        list_item& operator=(list_item&&) = delete;
+    };
 
-        size_t _num_items;
-        list_item _sentinel;
+    size_t _num_items;
+    list_item _sentinel;
 };
 
 /*
  * Iterator definitions
  */
+template <class T>
+DoublyLinkedList<T>::Iterator::Iterator()
+{
+    _current_item = &_sentinel;
+}
+
 template <class T>
 DoublyLinkedList<T>::Iterator::Iterator(const list_item& start)
 {
@@ -76,21 +95,85 @@ DoublyLinkedList<T>::Iterator::Iterator(const list_item& start)
 }
 
 template <class T>
-void DoublyLinkedList<T>::Iterator::moveNext()
+DoublyLinkedList<T>::Iterator::~Iterator()
+{
+}
+
+template <class T>
+DoublyLinkedList<T>::Iterator&
+DoublyLinkedList<T>::Iterator::operator=(const DoublyLinkedList<T>::Iterator& other)
+{
+    _current_item = other._current_item;
+}
+
+template <class T>
+bool
+DoublyLinkedList<T>::Iterator::operator==(const DoublyLinkedList<T>::Iterator& other)
+{
+    if ((_current_item == nullptr) || (other._current_item == nullptr)) return _current_item == other._current_item;
+    return (_current_item->prev == other._current_item->prev) && (_current_item->next == other._current_item->next);
+}
+
+template <class T>
+bool
+DoublyLinkedList<T>::Iterator::operator!=(const Iterator& other)
+{
+    return !(*this == other);
+}
+
+template <class T>
+const DoublyLinkedList<T>::Iterator&
+DoublyLinkedList<T>::Iterator::operator++()
+{
+    _current_item = _current_item->next;
+    return *this;
+}
+
+template <class T>
+DoublyLinkedList<T>::Iterator
+DoublyLinkedList<T>::Iterator::operator++(int _ignore)
+{
+    Iterator current = *this;
+    ++(*this);
+    return current;
+}
+
+template <class T>
+const DoublyLinkedList<T>::Iterator&
+DoublyLinkedList<T>::Iterator::operator--()
+{
+    _current_item = _current_item->prev;
+    return *this;
+}
+
+template <class T>
+DoublyLinkedList<T>::Iterator
+DoublyLinkedList<T>::Iterator::operator--(int _ignore)
+{
+    Iterator current = *this;
+    --(*this);
+    return current;
+}
+
+template <class T>
+void
+DoublyLinkedList<T>::Iterator::moveNext()
 {
     _current_item = _current_item->next;
 }
 
 template <class T>
-T& DoublyLinkedList<T>::Iterator::currentItem() const
+T&
+DoublyLinkedList<T>::Iterator::currentItem() const
 {
     return _current_item->item;
 }
 
 template <class T>
-T DoublyLinkedList<T>::Iterator::removeCurrent()
+T
+DoublyLinkedList<T>::Iterator::removeCurrent()
 {
-    const list_item *const next_item = _current_item->next;
+    const list_item* const next_item = _current_item->next;
     const T item = _current_item->item;
 
     delete _current_item;
@@ -100,13 +183,15 @@ T DoublyLinkedList<T>::Iterator::removeCurrent()
 }
 
 template <class T>
-void DoublyLinkedList<T>::Iterator::insertBeforeCurrent(const T& item)
+void
+DoublyLinkedList<T>::Iterator::insertBeforeCurrent(const T& item)
 {
     new list_item(_current_item->prev, _current_item, item);
 }
 
 template <class T>
-void DoublyLinkedList<T>::Iterator::insertAfterCurrent(const T& item)
+void
+DoublyLinkedList<T>::Iterator::insertAfterCurrent(const T& item)
 {
     new list_item(_current_item, _current_item->next, item);
 }
@@ -117,16 +202,16 @@ void DoublyLinkedList<T>::Iterator::insertAfterCurrent(const T& item)
 template <class T>
 DoublyLinkedList<T>::list_item::list_item()
     : prev(nullptr),
-    next(nullptr),
-    item()
+      next(nullptr),
+      item()
 {
 }
 
 template <class T>
-DoublyLinkedList<T>::list_item::list_item(list_item *const prev_item, list_item *const next_item, const T& item_val)
+DoublyLinkedList<T>::list_item::list_item(list_item* const prev_item, list_item* const next_item, const T& item_val)
     : prev(prev_item),
-    next(next_item),
-    item(item_val)
+      next(next_item),
+      item(item_val)
 {
     prev->next = this;
     next->prev = this;
@@ -145,7 +230,7 @@ DoublyLinkedList<T>::list_item::~list_item()
 template <class T>
 DoublyLinkedList<T>::DoublyLinkedList()
     : _num_items(0),
-    _sentinel()
+      _sentinel()
 {
     _sentinel.next = &_sentinel;
     _sentinel.prev = &_sentinel;
@@ -160,7 +245,8 @@ DoublyLinkedList<T>::~DoublyLinkedList()
 template <class T>
 DoublyLinkedList<T>::DoublyLinkedList(const DoublyLinkedList& other)
 {
-    for (auto item : other) {
+    for (auto item : other)
+    {
         pushFront(item);
     }
 }
@@ -180,23 +266,26 @@ DoublyLinkedList<T>::DoublyLinkedList(DoublyLinkedList&& other)
 }
 
 template <class T>
-void DoublyLinkedList<T>::pushFront(const T& item)
+void
+DoublyLinkedList<T>::pushFront(const T& item)
 {
     new list_item(&_sentinel, _sentinel.next, item);
     _num_items++;
 }
 
 template <class T>
-void DoublyLinkedList<T>::pushBack(const T& item)
+void
+DoublyLinkedList<T>::pushBack(const T& item)
 {
     new list_item(_sentinel.prev, &_sentinel, item);
     _num_items++;
 }
 
 template <class T>
-T DoublyLinkedList<T>::popFront()
+T
+DoublyLinkedList<T>::popFront()
 {
-    list_item *li = _sentinel.next;
+    list_item* li = _sentinel.next;
     const T item = li->item;
     delete li;
 
@@ -205,9 +294,10 @@ T DoublyLinkedList<T>::popFront()
 }
 
 template <class T>
-T DoublyLinkedList<T>::popBack()
+T
+DoublyLinkedList<T>::popBack()
 {
-    list_item *li = _sentinel.prev;
+    list_item* li = _sentinel.prev;
     const T item = li->item;
     delete li;
 
@@ -216,18 +306,22 @@ T DoublyLinkedList<T>::popBack()
 }
 
 template <class T>
-void DoublyLinkedList<T>::clear()
+void
+DoublyLinkedList<T>::clear()
 {
-    for (size_t i = 0; i < _num_items; i++) {
+    for (size_t i = 0; i < _num_items; i++)
+    {
         delete _sentinel.next;
     }
 }
 
 template <class T>
-T DoublyLinkedList<T>::removeItem(const size_t index)
+T
+DoublyLinkedList<T>::removeItem(const size_t index)
 {
-    list_item *li = &_sentinel;
-    for (size_t i = 0; i < index; i++) {
+    list_item* li = &_sentinel;
+    for (size_t i = 0; i < index; i++)
+    {
         li = li->next;
     }
 
@@ -237,21 +331,31 @@ T DoublyLinkedList<T>::removeItem(const size_t index)
 }
 
 template <class T>
-typename DoublyLinkedList<T>::Iterator DoublyLinkedList<T>::getIter() const
+typename DoublyLinkedList<T>::Iterator
+DoublyLinkedList<T>::begin() const
 {
     Iterator iter(_sentinel);
     return iter;
 }
 
 template <class T>
-T& DoublyLinkedList<T>::operator[](const size_t index) const
+typename DoublyLinkedList<T>::Iterator
+DoublyLinkedList<T>::end() const
 {
-    list_item *li = &_sentinel;
-    for (size_t i = 0; i < index; i++) {
+    Iterator iter(_sentinel);
+    return iter;
+}
+
+template <class T>
+T&
+DoublyLinkedList<T>::operator[](const size_t index) const
+{
+    list_item* li = &_sentinel;
+    for (size_t i = 0; i < index; i++)
+    {
         li = li->next;
     }
     return li->item;
 }
 
 #endif /* _DOUBLY_LINKED_LIST_H */
-

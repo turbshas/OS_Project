@@ -1,0 +1,38 @@
+BasedOnStyle: LLVM
+
+UseTab: Never
+IndentWidth: 4
+TabWidth: 4
+ColumnLimit: 0
+
+AllowShortBlocksOnASingleLine: Always
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: true
+AlwaysBreakAfterReturnType: TopLevelDefinitions
+
+BreakAfterAttributes: Always
+BreakBeforeBraces: Allman
+
+IncludeBlocks: Merge
+IndentAccessModifiers: true
+IndentCaseLabels: false
+InsertNewlineAtEOF: true
+
+PackConstructorInitializers: Never
+
+QualifierAlignment: Left
+
+SortIncludes: CaseInsensitive
+SortUsingDeclarations: LexicographicNumeric
+
+AccessModifierOffset: 0
+NamespaceIndentation: All
+FixNamespaceComments: false
+
+---
+Languge: Cpp
+DerivePointerAlignment: false
+PointerAlignment: Left
+ReferenceAlignment: Left
+---
