@@ -21,12 +21,13 @@ enum class ProcessState : uint8_t
     NUM_STATES,
 };
 
+/// @brief Represents a Process on the system.
 class Process
 {
     private:
-        const uint32_t _parentProcessId;
-        const uint32_t _processId;
-        MemoryManager* const _memMgr;
+        uint32_t _parentProcessId;
+        uint32_t _processId;
+        MemoryManager* _memMgr;
 
         ProcessState _state;
         bool _swapped;
@@ -36,13 +37,27 @@ class Process
         DoublyLinkedList<Thread> _threadList;
 
     public:
-        Process() = delete;
+        /// @brief Included for flexibility, not intended for actually creating processes.
+        /// Use Process::Process(const uint32_t, MemoryManager* const) instead.
+        Process();
+        /// @brief Create a new Process.
+        /// @param parentProcessId ID of the parent process that is creating this one.
+        /// @param memMgr MemoryManager from which this process can request memory allocations.
         Process(const uint32_t parentProcessId, MemoryManager* const memMgr);
-        Process(const Process&);
-        Process(Process&&);
+        /// @brief Included for flexibility, Processes are not meant to be copied.
+        /// @param other The Process from which to copy.
+        Process(const Process& other);
+        /// @brief Included for flexibility.
+        /// @param other The Process from which to move.
+        Process(Process&& other);
+        /// @brief Finalize a Process.
         ~Process();
-        Process& operator=(const Process&);
-        Process& operator=(Process&&);
+        /// @brief Included for flexibility, Processes are not meant to be copied.
+        /// @param other The Process from which to copy.
+        Process& operator=(const Process& other);
+        /// @brief Included for flexibility.
+        /// @param other The Process from which to move.
+        Process& operator=(Process&& other);
 
         void ReadyForExec();
         void FinishExec();

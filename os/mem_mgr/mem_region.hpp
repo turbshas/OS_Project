@@ -24,7 +24,7 @@ class MemRegion
         /// @brief Allowed access permissions for the memory region.
         MemPermisions perms;
 
-        // MemRegion();
+        MemRegion();
         MemRegion(const uintptr_t startAddress, const size_t regionSize, MemPermisions permissions);
         /// @brief Get the end address of the last byte in the memory region.
         uintptr_t getEnd() const { return start + size - 1; };

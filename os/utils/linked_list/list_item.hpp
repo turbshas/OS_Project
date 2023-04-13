@@ -1,3 +1,6 @@
+#ifndef _LINKED_LIST_DETAILS__LIST_ITEM
+#define _LINKED_LIST_DETAILS__LIST_ITEM
+
 namespace os::utils::linked_list::details
 {
     class empty_list_item
@@ -58,3 +61,5 @@ namespace os::utils::linked_list::details
             list_item& operator=(list_item&&) = delete;
     };
 }
+
+#endif /* _LINKED_LIST_DETAILS__LIST_ITEM */
