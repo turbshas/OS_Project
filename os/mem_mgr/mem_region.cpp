@@ -1,11 +1,15 @@
 #include "mem_region.hpp"
 
-MemRegion::MemRegion()
-    : start(), size(), perms()
-{
-}
+// MemRegion::MemRegion()
+//     : start(),
+//       size(),
+//       perms()
+// {
+// }
 
-MemRegion::MemRegion(uintptr_t startAddr, size_t regionSize, MemPermisions regionPerms)
-    : start(startAddr), size(regionSize), perms(regionPerms)
+MemRegion::MemRegion(const uintptr_t startAddress, const size_t regionSize, MemPermisions regionPerms)
+    : start(startAddress),
+      size(regionSize),
+      perms(regionPerms)
 {
 }

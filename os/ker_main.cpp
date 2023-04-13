@@ -1,8 +1,19 @@
 #include "alloc.h"
 #include "drivers.h"
 #include "mem_mgr.h"
+#include "proc_mgr.h"
 #include "static_circular_buffer.h"
 #include "stm32_rtc.h"
+
+using namespace os::utils::static_buffer;
+
+static const void*
+AllocateMem(const size_t numBytes)
+{
+    // const void* addr = memoryManager.AllocatePages(processManager.GetKernelProcess(), numBytes);
+    const void* addr = nullptr;
+    return addr;
+}
 
 /*
  * Current goal: get a process + thread running in user mode
@@ -36,10 +47,10 @@ ker_main(void)
     RTC->get_datetime(&dt);
 
     memoryManager.Initialize();
-    alloc_init();
-    void *p = _malloc(64);
-    void *p2 = _malloc(64);
-    int *p3 = new int[6];
+    alloc_init(AllocateMem);
+    void* p = _malloc(64);
+    void* p2 = _malloc(64);
+    int* p3 = new int[6];
     _free(p);
     delete[] p3;
     _free(p2);

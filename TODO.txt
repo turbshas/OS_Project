@@ -95,4 +95,4 @@ Makefile/build system:
    - Move linker script into cpu/platform folder
    - Create cpu.h or platform.h to contain cpu- or platform-specific info
 
-
+- will need to fix linked list to return a proper value when popFront() or popBack() is called and the list is empty

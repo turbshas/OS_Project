@@ -24,14 +24,14 @@ PackConstructorInitializers: Never
 QualifierAlignment: Left
 
 SortIncludes: CaseInsensitive
-SortUsingDeclarations: LexicographicNumeric
+SortUsingDeclarations: true
 
 AccessModifierOffset: 0
 NamespaceIndentation: All
 FixNamespaceComments: false
 
 ---
-Languge: Cpp
+Language: Cpp
 DerivePointerAlignment: false
 PointerAlignment: Left
 ReferenceAlignment: Left

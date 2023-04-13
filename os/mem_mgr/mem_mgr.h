@@ -1,22 +1,30 @@
 #ifndef MEM_MGR_H
 #define MEM_MGR_H
 
-#include <cstdio>
+#include "mem_region.hpp"
 #include "pageList.h"
-#include "process.h"
+#include <cstdio>
 
 #define PAGE_SIZE (2 * 1024)
 
-class MemoryManager {
-    PageList _pageList;
+class MemoryManager
+{
+    private:
+        PageList _pageList;
 
     public:
         MemoryManager();
+        MemoryManager(const MemoryManager&) = delete;
+        MemoryManager(MemoryManager&&) = delete;
+        ~MemoryManager();
+        MemoryManager& operator=(const MemoryManager&) = delete;
+        MemoryManager& operator=(MemoryManager&&) = delete;
+
         void Initialize();
-        void AllocatePages(Process *const process, const size_t size);
+        const MemRegion Allocate(const size_t numBytes);
+        void Free(const MemRegion& memRegion);
 };
 
 extern MemoryManager memoryManager;
 
 #endif /* MEM_MGR_H */
-

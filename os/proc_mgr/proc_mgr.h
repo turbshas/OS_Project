@@ -3,7 +3,9 @@
 
 #include "cpu.h"
 #include "doubly_linked_list.h"
+#include "mem_mgr.h"
 #include "mpu.h"
+#include "process.h"
 #include "thread.h"
 
 /* TODO:
@@ -27,12 +29,15 @@
  *     - Store general state (idle, busy, etc.)
  *     - Could go for performance and have scheduling domains
  */
-class ProcessManager {
+class ProcessManager
+{
     private:
-        DoublyLinkedList<Process *> _processes;
-        DoublyLinkedList<Thread *> _readyThreadsRanToCompletion;
-        DoublyLinkedList<Thread *> _readyThreadsStoppedEarly;
-        DoublyLinkedList<Thread *> _blockedThreads;
+        const MemoryManager* _memMgr;
+        Process _kernelProcess;
+        DoublyLinkedList<Process*> _processes;
+        DoublyLinkedList<Thread*> _readyThreadsRanToCompletion;
+        DoublyLinkedList<Thread*> _readyThreadsStoppedEarly;
+        DoublyLinkedList<Thread*> _blockedThreads;
         Thread* _runningThreads[NUM_CPUS];
 
     public:
@@ -43,9 +48,15 @@ class ProcessManager {
         ProcessManager& operator=(const ProcessManager&) = delete;
         ProcessManager& operator=(ProcessManager&&) = delete;
 
+        /// @brief Initializes dependencies that cannot be obtained at construction-time,
+        ///        since this class should be static and thus default-constructed.
+        /// @param memMgr The memory manager to use for allocating memory to processes.
+        void Initialize(const MemoryManager& memMgr);
+        Process* GetKernelProcess() { return &_kernelProcess; };
         Thread* CreateThread(Process* parentProcess);
         Thread* ScheduleNextThread(uint32_t core);
 };
 
-#endif /* PROC_MGR_H */
+extern ProcessManager processManager;
 
+#endif /* PROC_MGR_H */

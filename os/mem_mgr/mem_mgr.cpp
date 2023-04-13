@@ -30,6 +30,11 @@ MemoryManager::MemoryManager()
 {
 }
 
+MemoryManager::~MemoryManager()
+{
+    // Intentionally do nothing.
+}
+
 void
 MemoryManager::Initialize()
 {
@@ -48,18 +53,32 @@ MemoryManager::Initialize()
 
     // Memory will be reserved for the kernel when its process is initialized.
     // TODO: initial stack (kernel stack) needs to be un-allocable
-    const size_t allocableMemSize = allocablePages * PAGE_SIZE;
     void* const allocationStart = reinterpret_cast<void*>(alignedAllocationStart);
     _pageList.freePages(allocablePages, allocationStart);
 
     MPU->init();
 }
 
-void
-MemoryManager::AllocatePages(Process* const process, const size_t size)
+const MemRegion
+MemoryManager::Allocate(const size_t numBytes)
 {
-    const size_t roundedDown = (size - 1) & ~(PAGE_SIZE - 1);
+    const size_t roundedDown = (numBytes - 1) & ~(PAGE_SIZE - 1);
     const size_t roundedUp = roundedDown + PAGE_SIZE;
     const size_t numPages = roundedUp / PAGE_SIZE;
-    return _pageList.allocatePages(numPages);
+
+    const void* const startAddr = _pageList.allocatePages(numPages);
+    const uintptr_t startAddrInt = reinterpret_cast<uintptr_t>(startAddr);
+    const size_t sizeAllocated = numPages * PAGE_SIZE;
+    return {
+        startAddrInt,
+        sizeAllocated,
+        MemPermisions::None};
+}
+
+void
+MemoryManager::Free(const MemRegion& memRegion)
+{
+    void* const startAddr = reinterpret_cast<void*>(memRegion.start);
+    const size_t numPages = memRegion.size / PAGE_SIZE;
+    _pageList.freePages(numPages, startAddr);
 }
