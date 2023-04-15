@@ -1,19 +1,18 @@
 #ifndef _CPU_H
 #define _CPU_H
 
+#include "savedRegisters.hpp"
 #include <stdio.h>
-
-#include "cpuRegsOnStack.h"
 
 #define NUM_CPUS 1u
 
-class Cpu {
+class Cpu
+{
     public:
         void collectCpuInfo();
-        void dispatchThread(CpuRegsOnStack& regs);
+        void dispatchThread(SavedRegisters& regs);
 
     private:
 };
 
 #endif /* _CPU_H */
-

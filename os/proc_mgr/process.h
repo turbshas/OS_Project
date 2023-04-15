@@ -8,6 +8,7 @@
 #include <cstdint>
 
 #define MAX_MPU_REGIONS 8
+#define ROOT_PROCESS_ID 1
 
 using namespace os::utils::linked_list;
 
@@ -18,6 +19,7 @@ enum class ProcessState : uint8_t
     Blocked,
     Zombie,
     Traced,
+    Dead,
     NUM_STATES,
 };
 
@@ -33,6 +35,7 @@ class Process
         bool _swapped;
         uint32_t _returnCode;
 
+        Thread _mainThread;
         DoublyLinkedList<MemRegion> _memRegionList;
         DoublyLinkedList<Thread> _threadList;
 
@@ -47,7 +50,7 @@ class Process
         /// @brief Included for flexibility, Processes are not meant to be copied.
         /// @param other The Process from which to copy.
         Process(const Process& other);
-        /// @brief Included for flexibility.
+        /// @brief Included for flexibility. Processes are not meant to be moved.
         /// @param other The Process from which to move.
         Process(Process&& other);
         /// @brief Finalize a Process.
@@ -55,7 +58,7 @@ class Process
         /// @brief Included for flexibility, Processes are not meant to be copied.
         /// @param other The Process from which to copy.
         Process& operator=(const Process& other);
-        /// @brief Included for flexibility.
+        /// @brief Included for flexibility. Processes are not meant to be moved.
         /// @param other The Process from which to move.
         Process& operator=(Process&& other);
 

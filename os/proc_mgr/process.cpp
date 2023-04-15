@@ -1,7 +1,5 @@
 #include "process.h"
 
-#define ROOT_PROCESS_ID 1
-
 static uint32_t processCounter = ROOT_PROCESS_ID;
 static uint32_t
 getNextProcessId()
@@ -14,7 +12,7 @@ Process::Process()
     : _parentProcessId(0),
       _processId(0),
       _memMgr(nullptr),
-      _state(ProcessState::Created),
+      _state(ProcessState::Dead),
       _swapped(false),
       _returnCode(0),
       _memRegionList(),
@@ -63,10 +61,37 @@ Process::Process(Process&& other)
     *this = other;
 }
 
+Process::~Process()
+{
+    // Empty thread list and call destructor on each thread since threads are stored by value so won't get called otherwise.
+    // I think this is fine since it's a copy of the original?
+    while (!_threadList.empty())
+    {
+        Thread thread = _threadList.popFront();
+        thread.~Thread();
+    }
+    while (_memRegionList.empty())
+    {
+        const MemRegion memRegion = _memRegionList.popFront();
+        _memMgr->Free(memRegion);
+    }
+}
+
 Process&
 Process::operator=(const Process& other)
 {
     if (&other == this) return *this;
+
+    _parentProcessId = other._parentProcessId;
+    _processId = other._processId;
+    _memMgr = other._memMgr;
+    _state = other._state;
+    _swapped = other._swapped;
+    _returnCode = other._returnCode;
+    _memRegionList = other._memRegionList;
+    _threadList = other._threadList;
+
+    return *this;
 }
 
 Process&
@@ -84,7 +109,7 @@ Process::operator=(Process&& other)
     other._memMgr = nullptr;
 
     _state = other._state;
-    other._state = ProcessState::Created;
+    other._state = ProcessState::Dead;
 
     _swapped = other._swapped;
     other._swapped = false;
@@ -97,22 +122,8 @@ Process::operator=(Process&& other)
 
     _threadList = other._threadList;
     other._threadList.clear();
-}
 
-Process::~Process()
-{
-    // Empty thread list and call destructor on each thread since threads are stored by value so won't get called otherwise.
-    // I think this is fine since it's a copy of the original?
-    while (!_threadList.empty())
-    {
-        Thread thread = _threadList.popFront();
-        thread.~Thread();
-    }
-    while (_memRegionList.empty())
-    {
-        const MemRegion memRegion = _memRegionList.popFront();
-        _memMgr->Free(memRegion);
-    }
+    return *this;
 }
 
 void

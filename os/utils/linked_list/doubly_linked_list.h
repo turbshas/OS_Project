@@ -29,7 +29,7 @@ namespace os::utils::linked_list
                 : _num_items(0),
                   _sentinel()
             {
-                for (auto& item : other)
+                for (const auto& item : other)
                 {
                     pushFront(item);
                 }
@@ -62,7 +62,7 @@ namespace os::utils::linked_list
                 // Clear current list to not leak memory.
                 clear();
 
-                for (auto& item : other)
+                for (const auto& item : other)
                 {
                     pushBack(item);
                 }

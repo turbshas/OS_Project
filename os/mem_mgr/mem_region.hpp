@@ -16,18 +16,28 @@ enum class MemPermisions : uint8_t
 /// @brief Represents a region in memory to be used by a process.
 class MemRegion
 {
-    public:
+    private:
         /// @brief Start address of the memory region.
-        const uintptr_t start;
+        uintptr_t _start;
         /// @brief Size of the memory region, in bytes.
-        const size_t size;
+        size_t _size;
         /// @brief Allowed access permissions for the memory region.
-        MemPermisions perms;
+        MemPermisions _perms;
 
+    public:
         MemRegion();
         MemRegion(const uintptr_t startAddress, const size_t regionSize, MemPermisions permissions);
+        MemRegion(const MemRegion&) = default;
+        MemRegion(MemRegion&&) = default;
+        ~MemRegion() = default;
+        MemRegion& operator=(const MemRegion&);
+        MemRegion& operator=(MemRegion&&);
+
         /// @brief Get the end address of the last byte in the memory region.
-        uintptr_t getEnd() const { return start + size - 1; };
+        uintptr_t start() const { return _start; };
+        size_t size() const { return _size; };
+        uintptr_t getEnd() const { return _start + _size - 1; };
+        MemPermisions perms() const { return _perms; };
 };
 
 #endif /* _MEM_REGION_H */

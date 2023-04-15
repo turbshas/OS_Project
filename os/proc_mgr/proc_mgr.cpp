@@ -19,9 +19,10 @@ ProcessManager::~ProcessManager()
 }
 
 void
-ProcessManager::Initialize(const MemoryManager& memMgr)
+ProcessManager::Initialize(MemoryManager& memMgr)
 {
     _memMgr = &memMgr;
+    _kernelProcess = Process{0, _memMgr};
 }
 
 Thread*

@@ -78,7 +78,7 @@ MemoryManager::Allocate(const size_t numBytes)
 void
 MemoryManager::Free(const MemRegion& memRegion)
 {
-    void* const startAddr = reinterpret_cast<void*>(memRegion.start);
-    const size_t numPages = memRegion.size / PAGE_SIZE;
+    void* const startAddr = reinterpret_cast<void*>(memRegion.start());
+    const size_t numPages = memRegion.size() / PAGE_SIZE;
     _pageList.freePages(numPages, startAddr);
 }

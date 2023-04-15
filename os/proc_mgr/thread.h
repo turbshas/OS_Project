@@ -2,7 +2,19 @@
 #define _THREAD_H
 
 #include "cpu.h"
+#include "mem_region.hpp"
 #include <cstdint>
+
+enum class ThreadState : uint8_t
+{
+    Created,
+    Ready,
+    Executing,
+    Blocked,
+    Zombie,
+    Dead,
+    NUM_STATES,
+};
 
 class Process;
 
@@ -10,50 +22,51 @@ class Thread
 {
         friend class Process;
 
-    public:
-        enum class ThreadState;
-
     private:
         uint32_t _threadId;
-        Process& _parentProcess;
+        Process* _parentProcess;
 
-        ThreadState _state; // TODO: figure out state machine
-
-        Thread* _prev;
-        Thread* _next;
+        ThreadState _state;
 
         bool _privileged;
         bool _useMainStack;
-        CpuRegsOnStack _stack;
+        SavedRegisters _cpuRegs;
+        MemRegion _stack;
 
     public:
-        enum class ThreadState
-        {
-            Created,
-            Ready,
-            Executing,
-            Blocked,
-            Zombie,
-            Dead,
-            NUM_STATES,
-        };
-
+        /// @brief Included for flexibility, not intended for actually creating threads.
+        /// Use Thread::Thread(Process&) instead.
         Thread();
-        Thread(Process&);
-        Thread(const Thread&);
-        Thread(Thread&&);
+
+        /// @brief Create a new Thread.
+        /// @param parentProcess The parent process that is creating this thread.
+        Thread(Process& parentProcess);
+
+        /// @brief Included for flexibility, Threads are not meant to be copied.
+        /// @param source The Thread from which to copy.
+        Thread(const Thread& source);
+
+        /// @brief Included for flexibility. Threads are not meant to be moved.
+        /// @param source The Thread from which to move.
+        Thread(Thread&& source);
+
+        /// @brief Finalize a Thread.
         ~Thread();
-        Thread& operator=(const Thread&);
-        Thread& operator=(Thread&&);
+
+        /// @brief Included for flexibility, Threads are not meant to be copied.
+        /// @param source The Thread from which to copy.
+        Thread& operator=(const Thread& source);
+
+        /// @brief Included for flexibility. Threads are not meant to be moved.
+        /// @param source The Thread from which to move.
+        Thread& operator=(Thread&& source);
 
         uint32_t getId() const { return _threadId; };
-        Process& getProcess() const { return _parentProcess; };
+        Process& getProcess() const { return *_parentProcess; };
         ThreadState getState() const { return _state; };
-        Thread* getPrev() const { return _prev; };
-        Thread* getNext() const { return _next; };
         bool isPrivileged() const { return _privileged; };
         bool isUsingMainStack() const { return _useMainStack; };
-        const CpuRegsOnStack& getStackPointer() const { return _stack; };
+        const SavedRegisters& getSavedRegisters() const { return _cpuRegs; };
 };
 
 #endif

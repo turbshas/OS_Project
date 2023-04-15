@@ -32,7 +32,7 @@
 class ProcessManager
 {
     private:
-        const MemoryManager* _memMgr;
+        MemoryManager* _memMgr;
         Process _kernelProcess;
         DoublyLinkedList<Process*> _processes;
         DoublyLinkedList<Thread*> _readyThreadsRanToCompletion;
@@ -51,7 +51,7 @@ class ProcessManager
         /// @brief Initializes dependencies that cannot be obtained at construction-time,
         ///        since this class should be static and thus default-constructed.
         /// @param memMgr The memory manager to use for allocating memory to processes.
-        void Initialize(const MemoryManager& memMgr);
+        void Initialize(MemoryManager& memMgr);
         Process* GetKernelProcess() { return &_kernelProcess; };
         Thread* CreateThread(Process* parentProcess);
         Thread* ScheduleNextThread(uint32_t core);
