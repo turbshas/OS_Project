@@ -2,6 +2,7 @@
 #define _THREAD_H
 
 #include "cpu.h"
+#include "mem_mgr.h"
 #include "mem_region.hpp"
 #include <cstdint>
 
@@ -40,7 +41,8 @@ class Thread
 
         /// @brief Create a new Thread.
         /// @param parentProcess The parent process that is creating this thread.
-        Thread(Process& parentProcess);
+        /// @param memMgr The MemoryManager from which a stack will be allocated.
+        Thread(Process& parentProcess, MemoryManager* memMgr);
 
         /// @brief Included for flexibility, Threads are not meant to be copied.
         /// @param source The Thread from which to copy.

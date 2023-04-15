@@ -15,6 +15,7 @@ Process::Process()
       _state(ProcessState::Dead),
       _swapped(false),
       _returnCode(0),
+      _mainThread(),
       _memRegionList(),
       _threadList()
 {
@@ -27,13 +28,10 @@ Process::Process(const uint32_t parentProcessId, MemoryManager* const memMgr)
       _state(ProcessState::Created),
       _swapped(false),
       _returnCode(0),
+      _mainThread(*this, memMgr),
       _memRegionList(),
       _threadList()
 {
-    const MemRegion initialMemRegion = _memMgr->Allocate(PAGE_SIZE);
-    _memRegionList.pushBack(initialMemRegion);
-    const Thread initialThread{*this};
-    _threadList.pushBack(initialThread);
 }
 
 Process::Process(const Process& other)
@@ -43,22 +41,16 @@ Process::Process(const Process& other)
       _state(other._state),
       _swapped(other._swapped),
       _returnCode(other._returnCode),
+      _mainThread(other._mainThread),
       _memRegionList(other._memRegionList),
       _threadList(other._threadList)
 {
 }
 
-Process::Process(Process&& other)
-    : _parentProcessId(other._parentProcessId),
-      _processId(other._processId),
-      _memMgr(other._memMgr),
-      _state(other._state),
-      _swapped(other._swapped),
-      _returnCode(other._returnCode),
-      _memRegionList(other._memRegionList),
-      _threadList(other._threadList)
+Process::Process(Process&& source)
+    : Process()
 {
-    *this = other;
+    *this = static_cast<Process&&>(source);
 }
 
 Process::~Process()

@@ -22,14 +22,14 @@ Thread::Thread()
 {
 }
 
-Thread::Thread(Process& parentProcess)
+Thread::Thread(Process& parentProcess, MemoryManager* memMgr)
     : _threadId(getNextThreadId()),
       _parentProcess(&parentProcess),
       _state(ThreadState::Created),
       _privileged(false),
       _useMainStack(true),
       _cpuRegs(),
-      _stack()
+      _stack(memMgr->Allocate(PAGE_SIZE))
 {
 }
 
@@ -45,15 +45,9 @@ Thread::Thread(const Thread& source)
 }
 
 Thread::Thread(Thread&& source)
-    : _threadId(source._threadId),
-      _parentProcess(source._parentProcess),
-      _state(source._state),
-      _privileged(source._privileged),
-      _useMainStack(source._useMainStack),
-      _cpuRegs(source._cpuRegs),
-      _stack(source._stack)
+    : Thread()
 {
-    source._state = ThreadState::Dead;
+    *this = static_cast<Thread&&>(source);
 }
 
 Thread::~Thread()
@@ -100,7 +94,6 @@ Thread::operator=(Thread&& source)
     // No need to destruct CPU regs - only stores data.
 
     _stack = source._stack;
-    source._stack.~MemRegion();
 
     return *this;
 }
