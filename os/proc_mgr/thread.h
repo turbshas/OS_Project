@@ -2,8 +2,10 @@
 #define _THREAD_H
 
 #include "cpu.h"
+#include "kernel_result_status.hpp"
 #include "mem_mgr.h"
 #include "mem_region.hpp"
+#include "misc.hpp"
 #include <cstdint>
 
 enum class ThreadState : uint8_t
@@ -68,7 +70,17 @@ class Thread
         ThreadState getState() const { return _state; };
         bool isPrivileged() const { return _privileged; };
         bool isUsingMainStack() const { return _useMainStack; };
+        AutomaticallyStackedRegisters* GetStackedRegisters() const
+        {
+            // Stack pointer will be already pointing to the stacked R0 after an interrupt.
+            return reinterpret_cast<AutomaticallyStackedRegisters*>(_cpuRegs.SP);
+        };
         const SavedRegisters& getSavedRegisters() const { return _cpuRegs; };
+
+        /// @brief Sets the entry point of the thread upon beginning execution.
+        /// @param startAddress The address of the first instruction to run.
+        /// @return Whether the attempt to set the entry point was successful.
+        KernelResultStatus SetEntryPoint(const VoidFunction startAddress);
 };
 
 #endif

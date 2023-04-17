@@ -3,13 +3,15 @@
 
 #include "cpu.h"
 #include "doubly_linked_list.h"
+#include "kernel_api.hpp"
 #include "mem_mgr.h"
 #include "mpu.h"
 #include "process.h"
 #include "thread.h"
 
+using namespace os::api;
+
 /* TODO:
- *   - Move cpu_regs_on_stack to cpu folder
  *   - Virtual round robin scheduling:
  *     - 1 Queue for processes that execute during entire time slice
  *     - 1 Queue for processes that block during time slice
@@ -51,7 +53,7 @@ class ProcessManager
         /// @brief Initializes dependencies that cannot be obtained at construction-time,
         ///        since this class should be static and thus default-constructed.
         /// @param memMgr The memory manager to use for allocating memory to processes.
-        void Initialize(MemoryManager& memMgr);
+        void Initialize(MemoryManager& memMgr, const KernelApi& kernelApi);
         Process* GetKernelProcess() { return &_kernelProcess; };
         Thread* CreateThread(Process* parentProcess);
         Thread* ScheduleNextThread(uint32_t core);

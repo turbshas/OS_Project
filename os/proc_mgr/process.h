@@ -4,7 +4,9 @@
 #include "doubly_linked_list.h"
 #include "mem_mgr.h"
 #include "mem_region.hpp"
+#include "misc.hpp"
 #include "thread.h"
+#include <cstddef>
 #include <cstdint>
 
 #define MAX_MPU_REGIONS 8
@@ -46,7 +48,8 @@ class Process
         /// @brief Create a new Process.
         /// @param parentProcessId ID of the parent process that is creating this one.
         /// @param memMgr MemoryManager from which this process can request memory allocations.
-        Process(const uint32_t parentProcessId, MemoryManager* const memMgr);
+        /// @param startAddress The address of the first instruction the process's first thread will execute.
+        Process(const uint32_t parentProcessId, MemoryManager* const memMgr, const VoidFunction startAddress);
         /// @brief Included for flexibility, Processes are not meant to be copied.
         /// @param other The Process from which to copy.
         Process(const Process& other);
@@ -74,9 +77,11 @@ class Process
         void Sleep();
         void Wake();
 
+        Thread* GetMainThread() { return &_mainThread; };
         Thread* CreateThread();
         void DestroyThread(Thread* thread);
 
+        void* AllocateMemory(const size_t numBytes);
         void AddMemRegion(const MemRegion&);
 };
 

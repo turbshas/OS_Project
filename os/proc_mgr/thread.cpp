@@ -97,3 +97,12 @@ Thread::operator=(Thread&& source)
 
     return *this;
 }
+
+KernelResultStatus
+Thread::SetEntryPoint(const VoidFunction startAddress)
+{
+    if (startAddress == nullptr || _state != ThreadState::Created) return KernelResultStatus::Error;
+    auto stackedRegs = GetStackedRegisters();
+    stackedRegs->PC = reinterpret_cast<uint32_t>(startAddress);
+    return KernelResultStatus::Success;
+}

@@ -1,5 +1,6 @@
 #include "alloc.h"
 #include "drivers.h"
+#include "kernel_api.hpp"
 #include "mem_mgr.h"
 #include "proc_mgr.h"
 #include "static_circular_buffer.h"
@@ -10,9 +11,7 @@ using namespace os::utils::static_buffer;
 static const void*
 AllocateMem(const size_t numBytes)
 {
-    // const void* addr = memoryManager.AllocatePages(processManager.GetKernelProcess(), numBytes);
-    const void* addr = nullptr;
-    return addr;
+    return processManager.GetKernelProcess()->AllocateMemory(numBytes);
 }
 
 /*
@@ -47,6 +46,7 @@ ker_main(void)
     RTC->get_datetime(&dt);
 
     memoryManager.Initialize();
+    processManager.Initialize(memoryManager, kernelApi);
     alloc_init(AllocateMem);
     void* p = _malloc(64);
     void* p2 = _malloc(64);

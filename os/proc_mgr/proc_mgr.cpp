@@ -4,7 +4,7 @@ ProcessManager processManager;
 
 ProcessManager::ProcessManager()
     : _memMgr(nullptr),
-      _kernelProcess(0, nullptr),
+      _kernelProcess(0, nullptr, nullptr),
       _processes(),
       _readyThreadsRanToCompletion(),
       _readyThreadsStoppedEarly(),
@@ -19,10 +19,10 @@ ProcessManager::~ProcessManager()
 }
 
 void
-ProcessManager::Initialize(MemoryManager& memMgr)
+ProcessManager::Initialize(MemoryManager& memMgr, const KernelApi& kernelApi)
 {
     _memMgr = &memMgr;
-    _kernelProcess = Process{0, _memMgr};
+    _kernelProcess = Process{0, _memMgr, kernelApi.ApiEntry};
 }
 
 Thread*

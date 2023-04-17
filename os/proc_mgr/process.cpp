@@ -21,7 +21,7 @@ Process::Process()
 {
 }
 
-Process::Process(const uint32_t parentProcessId, MemoryManager* const memMgr)
+Process::Process(const uint32_t parentProcessId, MemoryManager* const memMgr, const VoidFunction startAddress)
     : _parentProcessId(parentProcessId),
       _processId(getNextProcessId()),
       _memMgr(memMgr),
@@ -32,6 +32,7 @@ Process::Process(const uint32_t parentProcessId, MemoryManager* const memMgr)
       _memRegionList(),
       _threadList()
 {
+    _mainThread.SetEntryPoint(startAddress);
 }
 
 Process::Process(const Process& other)
@@ -116,6 +117,15 @@ Process::operator=(Process&& other)
     other._threadList.clear();
 
     return *this;
+}
+
+void*
+Process::AllocateMemory(const size_t numBytes)
+{
+    const MemRegion memRegion = _memMgr->Allocate(numBytes);
+    if (memRegion.start() == 0) return nullptr;
+    AddMemRegion(memRegion);
+    return reinterpret_cast<void*>(memRegion.start());
 }
 
 void
