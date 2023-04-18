@@ -53,6 +53,7 @@ MemoryManager::Initialize()
 
     // Memory will be reserved for the kernel when its process is initialized.
     // TODO: initial stack (kernel stack) needs to be un-allocable
+    //       could just allocate memory for it, then pass that value to the interrupt handlers?
     void* const allocationStart = reinterpret_cast<void*>(alignedAllocationStart);
     _pageList.freePages(allocablePages, allocationStart);
 

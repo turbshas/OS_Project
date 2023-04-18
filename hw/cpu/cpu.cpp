@@ -20,11 +20,54 @@
  *
  */
 
-bool switchToScheduler;
 Thread* schedulerThread;
-Thread* runningThread;
-SavedRegisters* runningThreadSavedRegisters;
+Thread* volatile runningThread;
+SavedRegisters* volatile runningThreadSavedRegisters;
 extern unsigned _INITIAL_STACK_POINTER;
+
+/* Save registers to stack immediately after interrupt - regardless of previous thread.
+    1) Save registers R4-R11 of the previously running thread to the thread
+    2) Since this is Increment After, indexing register should be pointing to address of SP in SavedRegisters.
+    3) Get stack value.
+    4) Bit 2 of LR says which stack is being used
+    5) Save stack value.
+    6) Save LR.
+    Always Inline is important - we don't want the compile to generate a call here
+    since that would clobber LR (which we need to save).
+*/
+__attribute__((always_inline)) static inline void
+SAVE_REGISTERS_AFTER_INTERRUPT(void)
+{
+    register uint32_t r4 asm("r4");
+    register uint32_t r5 asm("r5");
+    register uint32_t r6 asm("r6");
+    register uint32_t r7 asm("r7");
+    register uint32_t r8 asm("r8");
+    register uint32_t r9 asm("r9");
+    register uint32_t r10 asm("r10");
+    register uint32_t r11 asm("r11");
+    asm volatile(
+        "STMIA  %[savedRegsAddr]!, { %[r4], %[r5], %[r6], %[r7], %[r8], %[r9], %[r10], %[r11] }\n\t"
+        "TST    LR, %[lrStackBit]\n\t"
+        "ITE    EQ\n\t"
+        "MRSEQ  R1, MSP\n\t"
+        "MRSNE  R1, PSP\n\t"
+        "STR    R1, [%[savedRegsAddr]], %[regSize]\n\t"
+        "STR    LR, [%[savedRegsAddr]]\n\t"
+        :
+        : [savedRegsAddr] "r"(runningThreadSavedRegisters),
+          [regSize] "i"(sizeof(uint32_t)),
+          [lrStackBit] "i"(EXCEPTION_LR_PROCESS_STACK),
+          [r4] "r"(r4),
+          [r5] "r"(r5),
+          [r6] "r"(r6),
+          [r7] "r"(r7),
+          [r8] "r"(r8),
+          [r9] "r"(r9),
+          [r10] "r"(r10),
+          [r11] "r"(r11)
+        : "r1", "memory", "cc");
+}
 
 __attribute__((noreturn)) void
 threadScheduler(void)
@@ -32,64 +75,74 @@ threadScheduler(void)
     for (;;) {}
 }
 
-__attribute__((interrupt, naked, noreturn)) void
+__attribute__((interrupt, noreturn)) void
 PendSV_Handler(void)
 {
-    // Save registers to stack immediately - regardless of previous thread
-    // Save registers R4-R11 of the previously running thread to the thread
-    //
-    // The value of runningThreadStack isn't known at compile, so the compiler
-    // generates code to dereference it (possibly using one of the registers
-    // that aren't saved automatically and we need to save).
-    // However, its *address* is! So pass in the address and dereference it once before using it.
-    // We need to do a load (LDR) anyway so we can use PC-offset addressing, since MOV doesn't support it.
-    asm volatile(
-        "\n\t"
-        "LDR    R0, [%0]\n\t"
-        /* Since this is Increment After, R0 should be pointing to address of SP in SavedRegisters. */
-        "STMIA  R0!, { R4-R11 }\n\t"
-        /* Get stack value. */
-        "TST    LR, #0x4\n\t" /* Bit 3 of LR says which stack is being used */
-        "ITE    EQ\n\t"
-        "MRSEQ  R1, MSP\n\t"
-        "MRSNE  R1, PSP\n\t"
-        /* Save stack value. */
-        "STR    R1, [R0]\n\t"
-        :
-        : "r"(&runningThreadSavedRegisters)
-        : "r0", "r1", "memory");
-
+    // No need to save kernel thread registers - they'll be reset on entry to the kernel anyway.
     SYS_CTL->clear_pending_pendsv();
+    const auto savedRegs = runningThread->GetSavedRegisters();
+    const auto stackedRegs = runningThread->GetStackedRegisters();
 
-    if (switchToScheduler)
-    {
-        // Set the registers on the stack to prepare for the scheduler (privileged mode, main stack pointer, PC).
-        const uintptr_t initialStackPointerInt = reinterpret_cast<uintptr_t>(&_INITIAL_STACK_POINTER);
-        // Stack is full-descending, so reduce stack pointer by the size of the registers that should be there. Plus an extra 4 bytes for safety.
-        const uintptr_t stackedRegistersStartAddress = initialStackPointerInt - (sizeof(AutomaticallyStackedRegisters) + sizeof(uint32_t));
+    /*
+        1) Set saved registers (R4-R11).
+        2) Set LR.
+        3) Determine which stack will be used.
+        4) Set SP.
+        5) Return from interrupt.
+    */
+    asm volatile(
+        "LDMDB  %[savedRegsAddr], { R4-R11 }\n\t"
+        "LDR    LR, [%[lr]]\n\t"
+        "TST    LR, %[lrStackBit]\n\t"
+        "ITE    EQ\n\t"
+        "MSREQ  MSP, %[sp]\n\t"
+        "MSRNE  PSP, %[sp]\n\t"
+        // "BX     LR\n\t"
+        :
+        : [savedRegsAddr] "r"(savedRegs->GetLoadMultipleStartAddress()),
+          [sp] "r"(&savedRegs->SP),
+          [lr] "r"(&savedRegs->ExceptionLR),
+          [lrStackBit] "i"(EXCEPTION_LR_PROCESS_STACK)
+        : "lr", "memory", "cc");
 
-        AutomaticallyStackedRegisters* const stackedRegs = reinterpret_cast<AutomaticallyStackedRegisters*>(stackedRegistersStartAddress);
-        stackedRegs->PC = reinterpret_cast<uint32_t>(threadScheduler);
-        // Set to Thumb mode.
-        stackedRegs->PSR = (1u << 24);
-        // Return to thread mode, get state from main stack.
-        const uint32_t linkRegisterValue = 0xfffffff9;
+    while (true) {}
+}
 
-        // Set the main stack pointer and return
-        asm volatile(
-            "\n\t"
-            "MSR     MSP, %0"
-            "\n\t"
-            "MOV     LR, %1"
-            "\n\t"
-            "BX      LR"
-            :
-            : "r"(stackedRegs), "r"(linkRegisterValue));
-    }
-    else
-    {
-        // Need to setup the next threads registers
-    }
+// These should only be used for SysTick
+static volatile uintptr_t stackPointerInt;
+static volatile uintptr_t stackedRegistersStartAddress;
+static volatile AutomaticallyStackedRegisters* volatile stackedRegs;
+static volatile uint32_t linkRegisterValue;
+
+// This is naked because we need to save registers before the compiler uses them.
+// Without this, it's attempting to (push to stack first, then) use R7 which we need to save first.
+__attribute__((interrupt, noreturn, naked)) void
+SysTick_Handler(void)
+{
+    SAVE_REGISTERS_AFTER_INTERRUPT();
+    SYS_CTL->clear_pending_systick();
+
+    // Set the registers on the stack to prepare for the scheduler (privileged mode, main stack pointer, PC).
+    stackPointerInt = reinterpret_cast<uintptr_t>(&_INITIAL_STACK_POINTER);
+    // Stack is full-descending, so reduce stack pointer by the size of the registers that should be there. Plus an extra 4 bytes for safety.
+    stackedRegistersStartAddress = stackPointerInt - (sizeof(AutomaticallyStackedRegisters) + sizeof(uint32_t));
+    stackedRegs = reinterpret_cast<volatile AutomaticallyStackedRegisters*>(stackedRegistersStartAddress);
+
+    stackedRegs->SetPC(reinterpret_cast<void*>(threadScheduler));
+    stackedRegs->SetThumbMode();
+    // Return to thread mode, get state from main stack.
+    linkRegisterValue = stackedRegs->GetLR(true, false);
+
+    // Set the main stack pointer and return
+    asm volatile(
+        "MSR     MSP, %[sp]\n\t"
+        "MOV     LR, %[lr]\n\t"
+        "BX      LR\n\t"
+        :
+        : [sp] "r"(stackedRegs),
+          [lr] "r"(linkRegisterValue));
+
+    while (true) {}
 }
 
 void

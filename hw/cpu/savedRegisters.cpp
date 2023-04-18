@@ -21,6 +21,7 @@ SavedRegisters::SavedRegisters()
       R9(0x0),
       R10(0x0),
       R11(0x0),
-      SP(0x0)
+      SP(0x0),
+      ExceptionLR(0x0)
 {
 }

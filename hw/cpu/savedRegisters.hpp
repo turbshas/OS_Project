@@ -3,6 +3,11 @@
 
 #include <cstdint>
 
+#define EXCEPTION_LR_BASE 0xfffffff1
+#define EXCEPTION_LR_THREAD_MODE (1u << 3)
+#define EXCEPTION_LR_PROCESS_STACK (1u << 2)
+#define PSR_THUMB_MODE (1u << 24)
+
 /**
  * @brief These registers are automatically pushed to stack by the CPU
  * on entry into an interrupt handler.
@@ -22,6 +27,15 @@ class AutomaticallyStackedRegisters
         uint32_t PSR;
 
         AutomaticallyStackedRegisters();
+
+        uint32_t GetLR(const bool threadMode, const bool processStack) volatile
+        {
+            const uint32_t threadModeBit = threadMode ? EXCEPTION_LR_THREAD_MODE : 0;
+            const uint32_t processStackBit = processStack || !threadMode ? EXCEPTION_LR_PROCESS_STACK : 0;
+            return EXCEPTION_LR_BASE | threadModeBit | processStackBit;
+        };
+        void SetPC(void* firstInstruction) volatile { PC = reinterpret_cast<uint32_t>(firstInstruction); };
+        void SetThumbMode() volatile { PSR = PSR | PSR_THUMB_MODE; };
 };
 
 /**
@@ -43,8 +57,20 @@ class SavedRegisters
         uint32_t R10;
         uint32_t R11;
         uint32_t SP;
+        uint32_t ExceptionLR;
 
         SavedRegisters();
+
+        uintptr_t GetLoadMultipleStartAddress() const
+        {
+            const uintptr_t lastRegisterAddr = reinterpret_cast<uintptr_t>(&R11);
+            // We use Decrement-Before for LDM instruction, so need to offset by one register-size.
+            return lastRegisterAddr + sizeof(uint32_t);
+        };
+        bool IsFromProcessStack() const
+        {
+            return ExceptionLR & EXCEPTION_LR_PROCESS_STACK;
+        };
 };
 
 #endif

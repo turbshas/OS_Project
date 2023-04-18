@@ -169,7 +169,7 @@ old_SysTick_Handler(void)
 uint32_t numSystemTicks;
 
 __attribute__((interrupt)) void
-SysTick_Handler(void)
+second_old_SysTick_Handler(void)
 {
     numSystemTicks++;
     SYS_CTL->set_pending_pendsv();

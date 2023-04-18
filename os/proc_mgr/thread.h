@@ -33,7 +33,7 @@ class Thread
 
         bool _privileged;
         bool _useMainStack;
-        SavedRegisters _cpuRegs;
+        SavedRegisters _savedRegs;
         MemRegion _stack;
 
     public:
@@ -73,9 +73,10 @@ class Thread
         AutomaticallyStackedRegisters* GetStackedRegisters() const
         {
             // Stack pointer will be already pointing to the stacked R0 after an interrupt.
-            return reinterpret_cast<AutomaticallyStackedRegisters*>(_cpuRegs.SP);
+            return reinterpret_cast<AutomaticallyStackedRegisters*>(_savedRegs.SP);
         };
-        const SavedRegisters& getSavedRegisters() const { return _cpuRegs; };
+        const SavedRegisters* GetSavedRegisters() const { return &_savedRegs; };
+        void SetSavedRegisters(const SavedRegisters& savedRegs) { _savedRegs = savedRegs; }
 
         /// @brief Sets the entry point of the thread upon beginning execution.
         /// @param startAddress The address of the first instruction to run.

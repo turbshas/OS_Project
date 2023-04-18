@@ -7,7 +7,7 @@ ApiEntryFunction()
     auto kernelProcess = processManager.GetKernelProcess();
     auto kernelThread = kernelProcess->GetMainThread();
     auto stackedRegisters = kernelThread->GetStackedRegisters();
-    auto savedRegisters = kernelThread->getSavedRegisters();
+    auto savedRegisters = kernelThread->GetSavedRegisters();
 }
 
 namespace os::api

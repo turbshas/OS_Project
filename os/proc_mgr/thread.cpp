@@ -17,7 +17,7 @@ Thread::Thread()
       _state(ThreadState::Dead),
       _privileged(false),
       _useMainStack(true),
-      _cpuRegs(),
+      _savedRegs(),
       _stack()
 {
 }
@@ -28,7 +28,7 @@ Thread::Thread(Process& parentProcess, MemoryManager* memMgr)
       _state(ThreadState::Created),
       _privileged(false),
       _useMainStack(true),
-      _cpuRegs(),
+      _savedRegs(),
       _stack(memMgr->Allocate(PAGE_SIZE))
 {
 }
@@ -39,7 +39,7 @@ Thread::Thread(const Thread& source)
       _state(source._state),
       _privileged(source._privileged),
       _useMainStack(source._useMainStack),
-      _cpuRegs(source._cpuRegs),
+      _savedRegs(source._savedRegs),
       _stack(source._stack)
 {
 }
@@ -64,7 +64,7 @@ Thread::operator=(const Thread& source)
     _state = source._state;
     _privileged = source._privileged;
     _useMainStack = source._useMainStack;
-    _cpuRegs = source._cpuRegs;
+    _savedRegs = source._savedRegs;
     _stack = source._stack;
 
     return *this;
@@ -90,7 +90,7 @@ Thread::operator=(Thread&& source)
     _useMainStack = source._useMainStack;
     source._useMainStack = true;
 
-    _cpuRegs = source._cpuRegs;
+    _savedRegs = source._savedRegs;
     // No need to destruct CPU regs - only stores data.
 
     _stack = source._stack;
