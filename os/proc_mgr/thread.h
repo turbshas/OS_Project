@@ -32,7 +32,6 @@ class Thread
         ThreadState _state;
 
         bool _privileged;
-        bool _useMainStack;
         SavedRegisters _savedRegs;
         MemRegion _stack;
 
@@ -44,7 +43,8 @@ class Thread
         /// @brief Create a new Thread.
         /// @param parentProcess The parent process that is creating this thread.
         /// @param memMgr The MemoryManager from which a stack will be allocated.
-        Thread(Process& parentProcess, MemoryManager* memMgr);
+        /// @param startAddress The first instruction the thread will execute.
+        Thread(Process& parentProcess, MemoryManager& memMgr, const VoidFunction startAddress);
 
         /// @brief Included for flexibility, Threads are not meant to be copied.
         /// @param source The Thread from which to copy.
@@ -69,7 +69,6 @@ class Thread
         Process& getProcess() const { return *_parentProcess; };
         ThreadState getState() const { return _state; };
         bool isPrivileged() const { return _privileged; };
-        bool isUsingMainStack() const { return _useMainStack; };
         AutomaticallyStackedRegisters* GetStackedRegisters() const
         {
             // Stack pointer will be already pointing to the stacked R0 after an interrupt.
@@ -82,6 +81,11 @@ class Thread
         /// @param startAddress The address of the first instruction to run.
         /// @return Whether the attempt to set the entry point was successful.
         KernelResultStatus SetEntryPoint(const VoidFunction startAddress);
+
+        void SetThreadMode(const bool privileged, const bool useProcessStack)
+        {
+            _savedRegs.SetExceptionLR(!privileged, useProcessStack);
+        };
 };
 
 #endif

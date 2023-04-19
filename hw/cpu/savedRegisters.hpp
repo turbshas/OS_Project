@@ -28,7 +28,7 @@ class AutomaticallyStackedRegisters
 
         AutomaticallyStackedRegisters();
 
-        uint32_t GetLR(const bool threadMode, const bool processStack) volatile
+        uint32_t GetExceptionReturnLR(const bool threadMode, const bool processStack) volatile
         {
             const uint32_t threadModeBit = threadMode ? EXCEPTION_LR_THREAD_MODE : 0;
             const uint32_t processStackBit = processStack || !threadMode ? EXCEPTION_LR_PROCESS_STACK : 0;
@@ -70,6 +70,19 @@ class SavedRegisters
         bool IsFromProcessStack() const
         {
             return ExceptionLR & EXCEPTION_LR_PROCESS_STACK;
+        };
+
+        void SetStackPointer(const uintptr_t stackAddress)
+        {
+            // Stack is full-descending, so reduce stack pointer by the size of the registers that should be there. Plus an extra 4 bytes for safety.
+            const uintptr_t stackedRegistersAddress = stackAddress - (sizeof(AutomaticallyStackedRegisters) + sizeof(uint32_t));
+            SP = stackedRegistersAddress;
+        };
+        void SetExceptionLR(const bool threadMode, const bool processStack)
+        {
+            const uint32_t threadModeBit = threadMode ? EXCEPTION_LR_THREAD_MODE : 0;
+            const uint32_t processStackBit = processStack || !threadMode ? EXCEPTION_LR_PROCESS_STACK : 0;
+            ExceptionLR = EXCEPTION_LR_BASE | threadModeBit | processStackBit;
         };
 };
 

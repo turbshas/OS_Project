@@ -10,7 +10,7 @@ namespace os::api
     class KernelApi
     {
         public:
-            const VoidFunction ApiEntry;
+            VoidFunction ApiEntry;
 
             KernelApi();
             void ProcessRequest(const ApiRequest& request);

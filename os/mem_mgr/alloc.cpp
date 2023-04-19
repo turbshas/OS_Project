@@ -157,7 +157,7 @@ which_skiplist_by_size(const size_t size)
 class Skiplist
 {
     public:
-        Skiplist(AllocFunc alloc_func);
+        Skiplist(AllocFunc alloc_func, AllocCompleteCallback callback);
         void* malloc(const size_t size);
         void* resize(const size_t old_size, const size_t new_size, void* const p);
         void free(const size_t size, void* const p);
@@ -217,6 +217,7 @@ class Skiplist
         size_t total_free;
         free_entry* heads[NUM_FREE_LISTS];
         AllocFunc block_alloc_func;
+        AllocCompleteCallback block_alloc_callback;
 
         list_walker get_walker(const unsigned skip_list) const;
 
@@ -299,10 +300,11 @@ Skiplist::list_walker::advance_links()
     }
 }
 
-Skiplist::Skiplist(AllocFunc alloc_func)
+Skiplist::Skiplist(AllocFunc alloc_func, AllocCompleteCallback callback)
     : total_mem(0),
       total_free(0),
-      block_alloc_func(alloc_func)
+      block_alloc_func(alloc_func),
+      block_alloc_callback(callback)
 {
     for (unsigned i = 0; i < NUM_FREE_LISTS; i++)
     {
@@ -558,14 +560,15 @@ Skiplist::malloc(const size_t size)
 
     /* Didn't find a valid spot */
     const size_t block_alloc_amt = round_up_to_mult(size, MIN_BLOCK_ALLOC_SIZE);
-    const void* const new_mem_block = block_alloc_func(block_alloc_amt);
-    if (new_mem_block == nullptr)
+    const MemRegion new_mem_block = block_alloc_func(block_alloc_amt);
+    if (new_mem_block.start() == 0)
     {
         /* Out of memory */
         return nullptr;
     }
 
-    free(block_alloc_amt, const_cast<void*>(new_mem_block));
+    free(block_alloc_amt, reinterpret_cast<void*>(new_mem_block.start()));
+    block_alloc_callback(new_mem_block);
     return malloc(size);
 }
 
@@ -695,13 +698,13 @@ Skiplist::resize(const size_t old_size, const size_t new_size, void* const point
 }
 
 /* Entry point for each skip list */
-static Skiplist free_list_start(nullptr);
+static Skiplist free_list_start(nullptr, nullptr);
 
 /* Initializes structures required for allocator to work */
 void
-alloc_init(AllocFunc alloc_func)
+alloc_init(AllocFunc alloc_func, AllocCompleteCallback callback)
 {
-    new (&free_list_start) Skiplist(alloc_func);
+    new (&free_list_start) Skiplist(alloc_func, callback);
 }
 
 /* The _ker_* functions assume the caller enforces the restrictions

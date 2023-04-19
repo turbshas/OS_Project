@@ -14,6 +14,24 @@ MemRegion::MemRegion(const uintptr_t startAddress, const size_t regionSize, MemP
 {
 }
 
+MemRegion::MemRegion(const MemRegion& source)
+    : _start(source._start),
+      _size(source._size),
+      _perms(source._perms)
+{
+}
+
+MemRegion::MemRegion(MemRegion&& source)
+    : MemRegion()
+{
+    *this = static_cast<MemRegion&&>(source);
+}
+
+MemRegion::~MemRegion()
+{
+    // Do nothing.
+}
+
 MemRegion&
 MemRegion::operator=(const MemRegion& other)
 {

@@ -28,11 +28,10 @@ Process::Process(const uint32_t parentProcessId, MemoryManager* const memMgr, co
       _state(ProcessState::Created),
       _swapped(false),
       _returnCode(0),
-      _mainThread(*this, memMgr),
+      _mainThread(*this, *memMgr, startAddress),
       _memRegionList(),
       _threadList()
 {
-    _mainThread.SetEntryPoint(startAddress);
 }
 
 Process::Process(const Process& other)
@@ -63,7 +62,7 @@ Process::~Process()
         Thread thread = _threadList.popFront();
         thread.~Thread();
     }
-    while (_memRegionList.empty())
+    while (!_memRegionList.empty())
     {
         const MemRegion memRegion = _memRegionList.popFront();
         _memMgr->Free(memRegion);

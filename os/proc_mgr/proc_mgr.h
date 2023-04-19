@@ -55,6 +55,7 @@ class ProcessManager
         /// @param memMgr The memory manager to use for allocating memory to processes.
         void Initialize(MemoryManager& memMgr, const KernelApi& kernelApi);
         Process* GetKernelProcess() { return &_kernelProcess; };
+        Process* CreateProcess(const VoidFunction start);
         Thread* CreateThread(Process* parentProcess);
         Thread* ScheduleNextThread(uint32_t core);
 };

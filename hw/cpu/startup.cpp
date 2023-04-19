@@ -1,52 +1,54 @@
+#include "startup.h"
+#include "kernel.h"
+#include "stm32_rcc.h"
+#include "sys_ctl_block.h"
+#include "sys_timer.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "startup.h"
-#include "stm32_rcc.h"
-#include "sys_ctl_block.h"
-#include "sys_timer.h"
-
-#include "kernel.h"
-
 extern unsigned _INITIAL_STACK_POINTER; /* Defined in linker script. Used by interrupt handlers as their stack */
 
-#define I2C1_LOC ((void *)0x40005400)
+#define I2C1_LOC ((void*)0x40005400)
 
-__attribute__((interrupt("IRQ")))
-static void
+__attribute__((interrupt("IRQ"))) static void
 Reset_Handler(void)
 {
     /* Copy .data section from Flash to SRAM */
-    unsigned *read_ptr = &_DATA_ROM_START;
-    unsigned *write_ptr = &_DATA_RAM_START;
-    for ( ; write_ptr < &_DATA_RAM_END; ) {
+    unsigned* read_ptr = &_DATA_ROM_START;
+    unsigned* write_ptr = &_DATA_RAM_START;
+    for (; write_ptr < &_DATA_RAM_END;)
+    {
         *write_ptr++ = *read_ptr++;
     }
 
     /* Init .bss section with zeros */
-    for (write_ptr = &_BSS_START; write_ptr < &_BSS_END; write_ptr++) {
+    for (write_ptr = &_BSS_START; write_ptr < &_BSS_END; write_ptr++)
+    {
         *write_ptr = 0;
     }
 
 #ifdef __STM32F4xx__
     /* Initialize CCMRAM to zeros */
-    for (write_ptr = CCM_RAM_START_LOC; write_ptr < CCM_RAM_END_LOC; write_ptr++) {
+    for (write_ptr = CCM_RAM_START_LOC; write_ptr < CCM_RAM_END_LOC; write_ptr++)
+    {
         *write_ptr = 0;
     }
     /* Copy .ccmram from Flash to CCMRAM */
     read_ptr = &_CCM_ROM_START;
     write_ptr = &_CCM_RAM_START;
-    for ( ; write_ptr < &_CCM_RAM_END; ) {
+    for (; write_ptr < &_CCM_RAM_END;)
+    {
         *write_ptr++ = *read_ptr++;
     }
 
 #endif
 
     /* Run C++ static constructors */
-    uintptr_t *initializer = reinterpret_cast<uintptr_t *>(&__init_array_start);
-    uintptr_t *initializersEnd = reinterpret_cast<uintptr_t *>(&__init_array_end);
-    while (initializer < initializersEnd) {
+    uintptr_t* initializer = reinterpret_cast<uintptr_t*>(&__init_array_start);
+    uintptr_t* initializersEnd = reinterpret_cast<uintptr_t*>(&__init_array_end);
+    while (initializer < initializersEnd)
+    {
         /* Make sure the address we're branching to is set to run in Thumb mode */
         const uintptr_t thumbInitializer = (*initializer) | 0x1;
         FunctionPointer fp = reinterpret_cast<FunctionPointer>(thumbInitializer);
@@ -58,7 +60,7 @@ Reset_Handler(void)
     (void)main();
 }
 
-__attribute__((section ("ISR_VECTORS"))) FunctionPointer isr_vector_table[] = {
+__attribute__((section("ISR_VECTORS"))) FunctionPointer isr_vector_table[] = {
     reinterpret_cast<FunctionPointer>(&_INITIAL_STACK_POINTER),
     Reset_Handler,
     NMI_Handler,
@@ -79,10 +81,10 @@ __attribute__((section ("ISR_VECTORS"))) FunctionPointer isr_vector_table[] = {
     SysTick_Handler,
 
     /* External Interrupts */
-    WWDG_IRQHandler,                /* Window Watchdog */
-    PVD_IRQHandler,                 /* PVD through EXTI Line detection */
-    TAMP_STAMP_IRQHandler,          /* Tamper and Timestamps through the EXTI line */
-    RTC_WKUP_IRQHandler,            /* RTC Wakeup through the EXTI line */
+    WWDG_IRQHandler,       /* Window Watchdog */
+    PVD_IRQHandler,        /* PVD through EXTI Line detection */
+    TAMP_STAMP_IRQHandler, /* Tamper and Timestamps through the EXTI line */
+    RTC_WKUP_IRQHandler,   /* RTC Wakeup through the EXTI line */
     FLASH_IRQHandler,
     RCC_IRQHandler,
 
@@ -102,7 +104,7 @@ __attribute__((section ("ISR_VECTORS"))) FunctionPointer isr_vector_table[] = {
     DMA1_Stream5_IRQHandler,
     DMA1_Stream6_IRQHandler,
 
-    ADC_IRQHandler,                 /* ADC1, ADC2, and ADC3 */
+    ADC_IRQHandler, /* ADC1, ADC2, and ADC3 */
 
     /* CAN1 IRQs */
     CAN1_TX_IRQHandler,
@@ -110,13 +112,13 @@ __attribute__((section ("ISR_VECTORS"))) FunctionPointer isr_vector_table[] = {
     CAN1_RX1_IRQHandler,
     CAN1_SCE_IRQHandler,
 
-    EXTI9_5_IRQHandler,             /* EXTI Line [9:5] */
+    EXTI9_5_IRQHandler, /* EXTI Line [9:5] */
 
     /* TIM IRQs */
-    TIM1_BRK_TIM9_IRQHandler,       /* TIM1 Break and TIM9 */
-    TIM1_UP_TIM10_IRQHandler,       /* TIM1 Update and TIM10 */
-    TIM1_TRG_COM_TIM11_IRQHandler,  /* TIM1 Trigger and Communication and TIM11 */
-    TIM1_CC_IRQHandler,             /* TIM1 Capture Compare */
+    TIM1_BRK_TIM9_IRQHandler,      /* TIM1 Break and TIM9 */
+    TIM1_UP_TIM10_IRQHandler,      /* TIM1 Update and TIM10 */
+    TIM1_TRG_COM_TIM11_IRQHandler, /* TIM1 Trigger and Communication and TIM11 */
+    TIM1_CC_IRQHandler,            /* TIM1 Capture Compare */
     TIM2_IRQHandler,
     TIM3_IRQHandler,
     TIM4_IRQHandler,
@@ -136,9 +138,9 @@ __attribute__((section ("ISR_VECTORS"))) FunctionPointer isr_vector_table[] = {
     USART2_IRQHandler,
     USART3_IRQHandler,
 
-    EXTI15_10_IRQHandler,           /* EXTI Line [15:10] */
-    RTC_Alarm_IRQHandler,           /* RTC Alarm A and B */
-    OTG_FS_WKUP_IRQHandler,         /* USB OTG through EXTI Line */
+    EXTI15_10_IRQHandler,   /* EXTI Line [15:10] */
+    RTC_Alarm_IRQHandler,   /* RTC Alarm A and B */
+    OTG_FS_WKUP_IRQHandler, /* USB OTG through EXTI Line */
 
     /* More TIM IRQs */
     TIM8_BRK_TIM12_IRQHandler,
@@ -154,7 +156,7 @@ __attribute__((section ("ISR_VECTORS"))) FunctionPointer isr_vector_table[] = {
     SPI3_IRQHandler,
     UART4_IRQHandler,
     UART5_IRQHandler,
-    TIM6_DAC_IRQHandler,            /* TIM6 and DAC 1 & 2 underrun errors */
+    TIM6_DAC_IRQHandler, /* TIM6 and DAC 1 & 2 underrun errors */
     TIM7_IRQHandler,
 
     /* DMA2 IRQs */
@@ -166,7 +168,7 @@ __attribute__((section ("ISR_VECTORS"))) FunctionPointer isr_vector_table[] = {
 
     /* Ethernet IRQs */
     ETH_IRQHandler,
-    ETH_WKUP_IRQHandler,            /* Ethernet Wakeup through EXTI Line */
+    ETH_WKUP_IRQHandler, /* Ethernet Wakeup through EXTI Line */
 
     /* CAN2 IRQs */
     CAN2_TX_IRQHandler,
@@ -174,7 +176,7 @@ __attribute__((section ("ISR_VECTORS"))) FunctionPointer isr_vector_table[] = {
     CAN2_RX1_IRQHandler,
     CAN2_SCE_IRQHandler,
 
-    OTG_FS_IRQHandler,              /* USB OTG FS */
+    OTG_FS_IRQHandler, /* USB OTG FS */
 
     /* More DMA2 IRQs */
     DMA2_Stream5_IRQHandler,
@@ -188,9 +190,9 @@ __attribute__((section ("ISR_VECTORS"))) FunctionPointer isr_vector_table[] = {
     I2C3_ER_IRQHandler,
 
     /* USB OTG IRQs */
-    OTG_HS_EP1_OUT_IRQHandler,      /* USB OTG HS End Point 1 Out */
-    OTG_HS_EP1_IN_IRQHandler,       /* USB OTG HS End Point 1 In */
-    OTG_HS_WKUP_IRQHandler,         /* USB OTG Wakeup through EXTI */
+    OTG_HS_EP1_OUT_IRQHandler, /* USB OTG HS End Point 1 Out */
+    OTG_HS_EP1_IN_IRQHandler,  /* USB OTG HS End Point 1 In */
+    OTG_HS_WKUP_IRQHandler,    /* USB OTG Wakeup through EXTI */
     OTG_HS_IRQHandler,
     DCMI_IRQHandler,
     CRYP_IRQHandler,
@@ -201,11 +203,10 @@ __attribute__((section ("ISR_VECTORS"))) FunctionPointer isr_vector_table[] = {
 #endif
 };
 
-__attribute__((noreturn))
-void
+__attribute__((noreturn)) void
 abort(void)
 {
-    for ( ;; ) {}
+    for (;;) {}
 }
 
 static void
@@ -216,7 +217,7 @@ System_Init(void)
      * normal operation here e.g. clocks
      */
     RCC->init();
-    sys_timer_init();
+    // sys_timer_init();
 }
 
 extern void cpu_init(void);

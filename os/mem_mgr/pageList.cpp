@@ -1,10 +1,10 @@
-#include "mem_mgr.h"
 #include "pageList.h"
+#include "mem_mgr.h"
 
 PageList::PageSequence::PageSequence()
     : numPages(0),
-    prev(this),
-    next(this)
+      prev(this),
+      next(this)
 {
 }
 
@@ -32,13 +32,13 @@ PageList::PageSequence::insertBefore(PageSequence& insert)
     prev = &insert;
 }
 
-PageList::PageSequence *
+PageList::PageSequence*
 PageList::PageSequence::remove()
 {
     prev->next = next;
     next->prev = prev;
-    next = nullptr;
-    prev = nullptr;
+    next = this;
+    prev = this;
     return this;
 }
 
@@ -59,89 +59,102 @@ PageList::areSequencesAdjacent(const PageSequence& first, const PageSequence& se
     const uintptr_t firstAddr = reinterpret_cast<uintptr_t>(&first);
     const uintptr_t secondAddr = reinterpret_cast<uintptr_t>(&second);
 
-    if (firstAddr == secondAddr) {
+    if (firstAddr == secondAddr)
+    {
         return true;
     }
 
-    if (firstAddr < secondAddr) {
+    if (firstAddr < secondAddr)
+    {
         const size_t firstSize = first.numPages * PAGE_SIZE;
         return (firstAddr + firstSize) == secondAddr;
-    } else {
+    }
+    else
+    {
         const size_t secondSize = second.numPages * PAGE_SIZE;
         return (secondAddr + secondSize) == firstAddr;
     }
 }
 
-void *
+void*
 PageList::allocatePages(const size_t numPages)
 {
-    if (sentinel.next == &sentinel) {
+    if (sentinel.next == &sentinel)
+    {
         /* We have allocated every page */
         return nullptr;
     }
 
-    PageSequence *iterator = sentinel.next;
-    while (iterator != &sentinel) {
-        if (iterator->numPages >= numPages) {
+    PageSequence* iterator = sentinel.next;
+    while (iterator != &sentinel)
+    {
+        if (iterator->numPages >= numPages)
+        {
             break;
         }
         iterator = iterator->next;
     }
 
-    if (iterator == &sentinel) {
+    if (iterator == &sentinel)
+    {
         // Found no suitable sequence of pages
         return nullptr;
     }
 
-    PageSequence *const prevSequence = iterator->prev;
+    PageSequence* const prevSequence = iterator->prev;
     iterator->remove();
-    if (iterator->numPages > numPages) {
+    if (iterator->numPages > numPages)
+    {
         // Need to put the extra pages back in the list
         const uintptr_t iterator_int = reinterpret_cast<uintptr_t>(iterator);
         const size_t leftoverPages = iterator->numPages - numPages;
-        const uintptr_t reinsertSequenceAddr = iterator_int + (leftoverPages * PAGE_SIZE);
+        const uintptr_t reinsertSequenceAddr = iterator_int + (numPages * PAGE_SIZE);
 
-        PageSequence *const pagesToReinsert = reinterpret_cast<PageSequence *>(reinsertSequenceAddr);
+        PageSequence* const pagesToReinsert = reinterpret_cast<PageSequence*>(reinsertSequenceAddr);
         pagesToReinsert->numPages = leftoverPages;
         prevSequence->insertAfter(*pagesToReinsert);
     }
 
-    return static_cast<void *>(iterator);
+    return static_cast<void*>(iterator);
 }
 
 void
-PageList::freePages(const size_t numPages, void *startAddr)
+PageList::freePages(const size_t numPages, void* startAddr)
 {
-    PageSequence *const freedSequence = static_cast<PageSequence *>(startAddr);
+    PageSequence* const freedSequence = static_cast<PageSequence*>(startAddr);
     freedSequence->numPages = numPages;
-    freedSequence->next = nullptr;
-    freedSequence->prev = nullptr;
+    freedSequence->next = freedSequence;
+    freedSequence->prev = freedSequence;
 
-    if (sentinel.next == sentinel.prev) {
+    if (sentinel.next == sentinel.prev)
+    {
         // List is empty
         sentinel.insertAfter(*freedSequence);
         return;
     }
 
     // Find the block after the freed one
-    PageSequence *iterator = sentinel.next;
-    while ((iterator != &sentinel) && (iterator < freedSequence)) {
+    PageSequence* iterator = sentinel.next;
+    while ((iterator != &sentinel) && (iterator < freedSequence))
+    {
         iterator = iterator->next;
     }
 
     iterator->insertBefore(*freedSequence);
 
     // Check if we can coalesce blocks
-    PageSequence *const followingSequence = freedSequence->next;
-    if (areSequencesAdjacent(*freedSequence, *followingSequence)) {
+    PageSequence* const followingSequence = freedSequence->next;
+    if (areSequencesAdjacent(*freedSequence, *followingSequence))
+    {
         // Can coalesce freed block with following block
         freedSequence->numPages += followingSequence->numPages;
         freedSequence->next = followingSequence->next;
         freedSequence->next->prev = freedSequence;
     }
 
-    PageSequence *const precedingSequence = freedSequence->prev;
-    if (areSequencesAdjacent(*freedSequence, *precedingSequence)) {
+    PageSequence* const precedingSequence = freedSequence->prev;
+    if (areSequencesAdjacent(*freedSequence, *precedingSequence))
+    {
         // Can coalesce freed block with preceding one
         precedingSequence->numPages += freedSequence->numPages;
         precedingSequence->next = freedSequence->next;

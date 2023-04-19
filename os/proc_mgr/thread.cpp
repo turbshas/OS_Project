@@ -16,21 +16,26 @@ Thread::Thread()
       _parentProcess(nullptr),
       _state(ThreadState::Dead),
       _privileged(false),
-      _useMainStack(true),
       _savedRegs(),
       _stack()
 {
 }
 
-Thread::Thread(Process& parentProcess, MemoryManager* memMgr)
+Thread::Thread(Process& parentProcess, MemoryManager& memMgr, const VoidFunction startAddress)
     : _threadId(getNextThreadId()),
       _parentProcess(&parentProcess),
       _state(ThreadState::Created),
       _privileged(false),
-      _useMainStack(true),
       _savedRegs(),
-      _stack(memMgr->Allocate(PAGE_SIZE))
+      _stack(memMgr.Allocate(PAGE_SIZE))
 {
+    // Initialize stack so we can access the stacked registers.
+    _savedRegs.SetStackPointer(_stack.start());
+    _savedRegs.SetExceptionLR(true, true);
+    // Then, setup the stacked registers.
+    auto stackedRegs = GetStackedRegisters();
+    stackedRegs->SetPC(reinterpret_cast<void*>(startAddress));
+    stackedRegs->SetThumbMode();
 }
 
 Thread::Thread(const Thread& source)
@@ -38,7 +43,6 @@ Thread::Thread(const Thread& source)
       _parentProcess(source._parentProcess),
       _state(source._state),
       _privileged(source._privileged),
-      _useMainStack(source._useMainStack),
       _savedRegs(source._savedRegs),
       _stack(source._stack)
 {
@@ -63,7 +67,6 @@ Thread::operator=(const Thread& source)
     _parentProcess = source._parentProcess;
     _state = source._state;
     _privileged = source._privileged;
-    _useMainStack = source._useMainStack;
     _savedRegs = source._savedRegs;
     _stack = source._stack;
 
@@ -86,9 +89,6 @@ Thread::operator=(Thread&& source)
 
     _privileged = source._privileged;
     source._privileged = false;
-
-    _useMainStack = source._useMainStack;
-    source._useMainStack = true;
 
     _savedRegs = source._savedRegs;
     // No need to destruct CPU regs - only stores data.

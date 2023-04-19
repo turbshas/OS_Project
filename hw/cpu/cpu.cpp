@@ -1,4 +1,6 @@
 #include "cpu.h"
+#include "api_request.hpp"
+#include "kernel_api.hpp"
 #include "sys_ctl_block.h"
 #include "thread.h"
 
@@ -22,6 +24,7 @@
 
 Thread* schedulerThread;
 Thread* volatile runningThread;
+Thread* volatile otherThread; // temp
 SavedRegisters* volatile runningThreadSavedRegisters;
 extern unsigned _INITIAL_STACK_POINTER;
 
@@ -32,8 +35,10 @@ extern unsigned _INITIAL_STACK_POINTER;
     4) Bit 2 of LR says which stack is being used
     5) Save stack value.
     6) Save LR.
-    Always Inline is important - we don't want the compile to generate a call here
-    since that would clobber LR (which we need to save).
+    - Always Inline is important - we don't want the compile to generate a call here
+      since that would clobber LR (which we need to save).
+    - This is really only needed for SysTick and SVC since we'll need to save the previous thread's registers to its thread object.
+      All other interrupt handlers should use the compiler-generated prologue and epilogue to ensure registers are saved.
 */
 __attribute__((always_inline)) static inline void
 SAVE_REGISTERS_AFTER_INTERRUPT(void)
@@ -69,9 +74,29 @@ SAVE_REGISTERS_AFTER_INTERRUPT(void)
         : "r1", "memory", "cc");
 }
 
-__attribute__((noreturn)) void
+static uint32_t
+GetLastStackValue(void)
+{
+    uint32_t stackPointer;
+    asm volatile(
+        "TST    LR, %[lrStackBit]\n\t"
+        "ITE    EQ\n\t"
+        "MRSEQ  %[sp], MSP\n\t"
+        "MRSNE  %[sp], PSP\n\t"
+        : [sp] "=rm"(stackPointer)
+        : [lrStackBit] "i"(EXCEPTION_LR_PROCESS_STACK)
+        : "cc");
+    return stackPointer;
+}
+
+__attribute__((naked, noreturn)) void
 threadScheduler(void)
 {
+    Thread* temp = runningThread;
+    runningThread = otherThread;
+    otherThread = temp;
+    runningThreadSavedRegisters = const_cast<SavedRegisters*>(runningThread->GetSavedRegisters());
+    SYS_CTL->set_pending_pendsv();
     for (;;) {}
 }
 
@@ -81,7 +106,6 @@ PendSV_Handler(void)
     // No need to save kernel thread registers - they'll be reset on entry to the kernel anyway.
     SYS_CTL->clear_pending_pendsv();
     const auto savedRegs = runningThread->GetSavedRegisters();
-    const auto stackedRegs = runningThread->GetStackedRegisters();
 
     /*
         1) Set saved registers (R4-R11).
@@ -97,13 +121,13 @@ PendSV_Handler(void)
         "ITE    EQ\n\t"
         "MSREQ  MSP, %[sp]\n\t"
         "MSRNE  PSP, %[sp]\n\t"
-        // "BX     LR\n\t"
+        "BX     LR\n\t"
         :
         : [savedRegsAddr] "r"(savedRegs->GetLoadMultipleStartAddress()),
-          [sp] "r"(&savedRegs->SP),
+          [sp] "r"(savedRegs->SP),
           [lr] "r"(&savedRegs->ExceptionLR),
           [lrStackBit] "i"(EXCEPTION_LR_PROCESS_STACK)
-        : "lr", "memory", "cc");
+        : "lr", "memory", "cc"); // Are regiser clobbers even necessary here? This function is marked as naked
 
     while (true) {}
 }
@@ -131,7 +155,7 @@ SysTick_Handler(void)
     stackedRegs->SetPC(reinterpret_cast<void*>(threadScheduler));
     stackedRegs->SetThumbMode();
     // Return to thread mode, get state from main stack.
-    linkRegisterValue = stackedRegs->GetLR(true, false);
+    linkRegisterValue = stackedRegs->GetExceptionReturnLR(true, false);
 
     // Set the main stack pointer and return
     asm volatile(
@@ -145,10 +169,18 @@ SysTick_Handler(void)
     while (true) {}
 }
 
+__attribute__((interrupt)) void
+SVC_Handler(void)
+{
+    const uint32_t stackPointer = GetLastStackValue();
+    const AutomaticallyStackedRegisters* const stackedRegs = reinterpret_cast<const AutomaticallyStackedRegisters*>(stackPointer);
+    const os::api::ApiRequest apiRequest{stackedRegs->R0, stackedRegs->R1, stackedRegs->R3};
+    os::api::kernelApi.ProcessRequest(apiRequest);
+}
+
 void
 cpu_init(void)
 {
-    for (int i = 0; i < 10; i++) {}
 }
 
 #if 0

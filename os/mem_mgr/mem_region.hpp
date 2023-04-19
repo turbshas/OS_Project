@@ -27,15 +27,15 @@ class MemRegion
     public:
         MemRegion();
         MemRegion(const uintptr_t startAddress, const size_t regionSize, MemPermisions permissions);
-        MemRegion(const MemRegion&) = default;
-        MemRegion(MemRegion&&) = default;
-        ~MemRegion() = default;
+        MemRegion(const MemRegion&);
+        MemRegion(MemRegion&&);
+        ~MemRegion();
         MemRegion& operator=(const MemRegion&);
         MemRegion& operator=(MemRegion&&);
 
-        /// @brief Get the end address of the last byte in the memory region.
         uintptr_t start() const { return _start; };
         size_t size() const { return _size; };
+        /// @brief Get the address of the last byte in the memory region.
         uintptr_t getEnd() const { return _start + _size - 1; };
         MemPermisions perms() const { return _perms; };
 };

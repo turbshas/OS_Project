@@ -3,16 +3,122 @@
 #include "kernel_api.hpp"
 #include "mem_mgr.h"
 #include "proc_mgr.h"
+#include "savedRegisters.hpp"
 #include "static_circular_buffer.h"
 #include "stm32_rtc.h"
+#include "sys_ctl_block.h"
 
 using namespace os::utils::static_buffer;
 
-static const void*
+static MemRegion
 AllocateMem(const size_t numBytes)
 {
-    return processManager.GetKernelProcess()->AllocateMemory(numBytes);
+    return memoryManager.Allocate(numBytes);
 }
+
+static void
+OnAllocateComplete(const MemRegion& memRegion)
+{
+    processManager.GetKernelProcess()->AddMemRegion(memRegion);
+}
+
+// TEST HERE:
+static const char oneText[] = "1";
+static const char twoText[] = "2";
+static const char threeText[] = "3";
+static const char fourText[] = "4";
+static const char fiveText[] = "5";
+static const char helloText[] = "hello ";
+static void
+thread1(void)
+{
+    while (true)
+    {
+        usart_send_string(USART3, helloText, sizeof(helloText));
+        usart_send_string(USART3, oneText, sizeof(oneText));
+        asm("WFI");
+        usart_send_string(USART3, helloText, sizeof(helloText));
+        usart_send_string(USART3, twoText, sizeof(twoText));
+        asm("WFI");
+        usart_send_string(USART3, helloText, sizeof(helloText));
+        usart_send_string(USART3, threeText, sizeof(threeText));
+        asm("WFI");
+        usart_send_string(USART3, helloText, sizeof(helloText));
+        usart_send_string(USART3, fourText, sizeof(fourText));
+        asm("WFI");
+        usart_send_string(USART3, helloText, sizeof(helloText));
+        usart_send_string(USART3, fiveText, sizeof(fiveText));
+        asm("WFI");
+    }
+}
+
+static const char worldText[] = "world\n";
+static void
+thread2(void)
+{
+    while (true)
+    {
+        usart_send_string(USART3, worldText, sizeof(worldText));
+        usart_send_string(USART3, oneText, sizeof(oneText));
+        asm("WFI");
+        usart_send_string(USART3, worldText, sizeof(worldText));
+        usart_send_string(USART3, twoText, sizeof(twoText));
+        asm("WFI");
+        usart_send_string(USART3, worldText, sizeof(worldText));
+        usart_send_string(USART3, threeText, sizeof(threeText));
+        asm("WFI");
+        usart_send_string(USART3, worldText, sizeof(worldText));
+        usart_send_string(USART3, fourText, sizeof(fourText));
+        asm("WFI");
+        usart_send_string(USART3, worldText, sizeof(worldText));
+        usart_send_string(USART3, fiveText, sizeof(fiveText));
+        asm("WFI");
+    }
+}
+
+extern Thread* schedulerThread;
+extern Thread* volatile runningThread;
+extern Thread* volatile otherThread;
+extern SavedRegisters* volatile runningThreadSavedRegisters;
+
+extern void
+threadScheduler(void);
+
+static void
+startExecution(Thread* scheduler, Thread* thread1, Thread* thread2)
+{
+    schedulerThread = scheduler;
+    runningThread = thread1;
+    otherThread = thread2;
+    runningThreadSavedRegisters = const_cast<SavedRegisters*>(thread1->GetSavedRegisters());
+}
+
+static void
+disableInterrupts(void)
+{
+    asm volatile(
+        "MRS  R0, FAULTMASK\n\t"
+        "ORR  R0, R0, #0x1\n\t"
+        "MSR  FAULTMASK, R0\n\t"
+        :
+        :
+        : "r0");
+}
+
+static void
+enableInterrupts(void)
+{
+    SYS_CTL->clear_pending_pendsv();
+    SYS_CTL->clear_pending_systick();
+    asm volatile(
+        "MRS  R0, FAULTMASK\n\t"
+        "AND  R0, R0, %0\n\t"
+        "MSR  FAULTMASK, R0\n\t"
+        :
+        : "i"(~0x1u)
+        : "r0");
+}
+// TEST END
 
 /*
  * Current goal: get a process + thread running in user mode
@@ -37,21 +143,18 @@ ker_main(void)
           - Will context switch out of kernel process and into user process
           - Will need to allocate stack storage
     */
-    StaticCircularBuffer<size_t, 8> testBuffer;
-    // Test stuff
+    disableInterrupts();
     usart_driver_init();
     usart_send_string(USART3, "hello world\n", sizeof("hello world\n"));
 
-    struct RTC_datetime dt;
-    RTC->get_datetime(&dt);
-
     memoryManager.Initialize();
+    kernelApi.ApiEntry = threadScheduler; // temp
     processManager.Initialize(memoryManager, kernelApi);
-    alloc_init(AllocateMem);
-    void* p = _malloc(64);
-    void* p2 = _malloc(64);
-    int* p3 = new int[6];
-    _free(p);
-    delete[] p3;
-    _free(p2);
+    alloc_init(AllocateMem, OnAllocateComplete);
+    auto process1 = processManager.CreateProcess(thread1);
+    auto process2 = processManager.CreateProcess(thread2);
+    startExecution(processManager.GetKernelProcess()->GetMainThread(), process1->GetMainThread(), process2->GetMainThread());
+    enableInterrupts();
+    SYS_CTL->set_pending_pendsv();
+    for (;;) {}
 }
