@@ -14,14 +14,14 @@ usart_send_byte(usart_t usart, const char byte)
 }
 
 int
-usart_send_string(usart_t usart, const char *const str, const uint8_t len)
+usart_send_string(usart_t usart, const char* const str, const uint8_t len)
 {
     int count = 0;
 
     usart->enable();
 
     DmaRequest dma_req;
-    dma_req.mem1 = static_cast<const void *>(str);
+    dma_req.mem1 = static_cast<const void*>(str);
     dma_req.periph = usart->get_address_for_dma();
     dma_req.len = len;
 
@@ -30,16 +30,18 @@ usart_send_string(usart_t usart, const char *const str, const uint8_t len)
 
     DMA1->mem_to_periph(dma_req);
 #if 0
-    for (int i = 0; i < len; i++) {
-        if ((unsigned char)str[i] > 0xff) {
+    for (int i = 0; i < len; i++)
+    {
+        if ((unsigned char)str[i] > 0xff)
+        {
             return count;
         }
-        usart_send(usart, str[i]);
+        usart->send(str[i]);
         count++;
     }
 
-    usart_finish_send(usart);
-    usart_disable(usart);
+    usart->finish_send();
+    usart->disable();
 #endif
 
     return count;
@@ -48,6 +50,14 @@ usart_send_string(usart_t usart, const char *const str, const uint8_t len)
 void
 usart_driver_init(void)
 {
+    USART1->init();
+    USART2->init();
     USART3->init();
+    UART4->init();
+    UART5->init();
+    USART6->init();
+    UART7->init();
+    UART8->init();
+    UART9->init();
+    UART10->init();
 }
-

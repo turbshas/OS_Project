@@ -89,7 +89,7 @@ GetLastStackValue(void)
     return stackPointer;
 }
 
-__attribute__((naked, noreturn)) void
+__attribute__((noreturn)) void
 threadScheduler(void)
 {
     Thread* temp = runningThread;

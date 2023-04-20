@@ -2,10 +2,13 @@
 
 #define SYS_CTL_BLOCK_BASE 0xe000e008
 
+#define SHPR3_SYSTICK 0xff000000
+#define SHPR3_SYSTICK_SHIFT 24u
+
 #define SHPR3_PENDSV 0xff0000
 #define SHPR3_PENDSV_SHIFT 16u
 
-volatile SysControlBlock *const SYS_CTL = reinterpret_cast<volatile SysControlBlock *>(SYS_CTL_BLOCK_BASE);
+volatile SysControlBlock* const SYS_CTL = reinterpret_cast<volatile SysControlBlock*>(SYS_CTL_BLOCK_BASE);
 
 void
 SysControlBlock::initialize(void) volatile
@@ -27,6 +30,8 @@ SysControlBlock::initialize(void) volatile
     CSR = CSR | CSR_ENABLE;
 
     /* Set PendSV priority to a low amount - should be the last interrupt to run */
-    SHPR3 = SHPR3 | ((128u << SHPR3_PENDSV_SHIFT) & SHPR3_PENDSV);
+    const uint32_t currentSHPR3 = SHPR3;
+    const uint32_t pendSvPriority = (255u << SHPR3_PENDSV_SHIFT) & SHPR3_PENDSV;
+    const uint32_t sysTickPriority = (254u << SHPR3_SYSTICK_SHIFT) & SHPR3_SYSTICK;
+    SHPR3 = currentSHPR3 | pendSvPriority | sysTickPriority;
 }
-

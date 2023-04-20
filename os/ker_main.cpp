@@ -145,7 +145,16 @@ ker_main(void)
     */
     disableInterrupts();
     usart_driver_init();
+    usart_send_string(USART1, "hello world\n", sizeof("hello world\n"));
+    usart_send_string(USART2, "hello world\n", sizeof("hello world\n"));
     usart_send_string(USART3, "hello world\n", sizeof("hello world\n"));
+    usart_send_string(UART4, "hello world\n", sizeof("hello world\n"));
+    usart_send_string(UART5, "hello world\n", sizeof("hello world\n"));
+    usart_send_string(USART6, "hello world\n", sizeof("hello world\n"));
+    usart_send_string(UART7, "hello world\n", sizeof("hello world\n"));
+    usart_send_string(UART8, "hello world\n", sizeof("hello world\n"));
+    usart_send_string(UART9, "hello world\n", sizeof("hello world\n"));
+    usart_send_string(UART10, "hello world\n", sizeof("hello world\n"));
 
     memoryManager.Initialize();
     kernelApi.ApiEntry = threadScheduler; // temp

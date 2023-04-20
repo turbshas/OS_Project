@@ -90,7 +90,7 @@ GDB_PORT := 63770
 TEST_QEMU := qemu-system-gnuarmeclipse
 
 test_run: $(BINARY)
-	$(TEST_QEMU) -serial null -serial null -serial stdio -gdb tcp::$(GDB_PORT),server -machine STM32F4-Discovery -cpu cortex-m4 -kernel $< -S
+	$(TEST_QEMU) -serial file:uart1.txt -serial file:uart2.txt -serial file:uart3.txt -serial file:uart4.txt -serial file:uart5.txt -serial file:uart6.txt -serial file:uart7.txt -serial file:uart8.txt -serial file:uart9.txt -serial file:uart10.txt -gdb tcp::$(GDB_PORT),server -machine STM32F4-Discovery -cpu cortex-m4 -kernel $< -S
 
 run: $(BINARY)
 	$(QEMU) -rtc base=localtime -serial null -serial null -serial stdio -gdb tcp::$(GDB_PORT),server -machine pebble-bb2 -cpu cortex-m3 -pflash $< -S

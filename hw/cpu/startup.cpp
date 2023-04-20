@@ -217,7 +217,7 @@ System_Init(void)
      * normal operation here e.g. clocks
      */
     RCC->init();
-    // sys_timer_init();
+    sys_timer_init();
 }
 
 extern void cpu_init(void);
