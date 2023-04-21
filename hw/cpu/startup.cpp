@@ -216,7 +216,7 @@ System_Init(void)
      * Only initialize things required for
      * normal operation here e.g. clocks
      */
-    RCC->init();
+    // RCC->init();
     sys_timer_init();
 }
 

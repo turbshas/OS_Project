@@ -28,8 +28,8 @@ usart_send_string(usart_t usart, const char* const str, const uint8_t len)
     dma_req.stream = 0;
     dma_req.priority = DmaRequest::PRIO_LOW;
 
-    DMA1->mem_to_periph(dma_req);
-#if 0
+    // DMA1->mem_to_periph(dma_req);
+#if 1
     for (int i = 0; i < len; i++)
     {
         if ((unsigned char)str[i] > 0xff)
@@ -53,11 +53,11 @@ usart_driver_init(void)
     USART1->init();
     USART2->init();
     USART3->init();
-    UART4->init();
-    UART5->init();
+    // UART4->init();
+    // UART5->init();
     USART6->init();
-    UART7->init();
-    UART8->init();
-    UART9->init();
-    UART10->init();
+    // UART7->init();
+    // UART8->init();
+    // UART9->init();
+    // UART10->init();
 }

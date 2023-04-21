@@ -90,7 +90,10 @@ GDB_PORT := 63770
 TEST_QEMU := qemu-system-gnuarmeclipse
 
 test_run: $(BINARY)
-	$(TEST_QEMU) -serial file:uart1.txt -serial file:uart2.txt -serial file:uart3.txt -serial file:uart4.txt -serial file:uart5.txt -serial file:uart6.txt -serial file:uart7.txt -serial file:uart8.txt -serial file:uart9.txt -serial file:uart10.txt -gdb tcp::$(GDB_PORT),server -machine STM32F4-Discovery -cpu cortex-m4 -kernel $< -S
+	$(TEST_QEMU) -serial stdio -gdb tcp::$(GDB_PORT),server -machine STM32F4-Discovery -mcu STM32F429ZI -cpu cortex-m4 -kernel $< -S
+
+base_qemu_run: $(BINARY)
+	qemu-system-arm -d guest_errors,unimp -serial stdio -gdb tcp::63770,server -machine netduinoplus2 -cpu cortex-m3 -bios ./build/startup.bin -S
 
 run: $(BINARY)
 	$(QEMU) -rtc base=localtime -serial null -serial null -serial stdio -gdb tcp::$(GDB_PORT),server -machine pebble-bb2 -cpu cortex-m3 -pflash $< -S
@@ -102,7 +105,10 @@ clean:
 	$(HIDE_OUTPUT)rm -rf build
 
 readelf: $(ELF)
-	arm-none-eabi-readelf $< -a
+	arm-none-eabi-readelf -a $<
 
-.PHONY: all default run debug clean readelf
+objdump: $(ELF)
+	arm-none-eabi-objdump -d $<
+
+.PHONY: all default run debug clean readelf objdump test_run base_qemu_run
 

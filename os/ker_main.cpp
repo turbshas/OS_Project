@@ -34,20 +34,20 @@ thread1(void)
 {
     while (true)
     {
-        usart_send_string(USART3, helloText, sizeof(helloText));
-        usart_send_string(USART3, oneText, sizeof(oneText));
+        usart_send_string(USART1, helloText, sizeof(helloText));
+        usart_send_string(USART1, oneText, sizeof(oneText));
         asm("WFI");
-        usart_send_string(USART3, helloText, sizeof(helloText));
-        usart_send_string(USART3, twoText, sizeof(twoText));
+        usart_send_string(USART1, helloText, sizeof(helloText));
+        usart_send_string(USART1, twoText, sizeof(twoText));
         asm("WFI");
-        usart_send_string(USART3, helloText, sizeof(helloText));
-        usart_send_string(USART3, threeText, sizeof(threeText));
+        usart_send_string(USART1, helloText, sizeof(helloText));
+        usart_send_string(USART1, threeText, sizeof(threeText));
         asm("WFI");
-        usart_send_string(USART3, helloText, sizeof(helloText));
-        usart_send_string(USART3, fourText, sizeof(fourText));
+        usart_send_string(USART1, helloText, sizeof(helloText));
+        usart_send_string(USART1, fourText, sizeof(fourText));
         asm("WFI");
-        usart_send_string(USART3, helloText, sizeof(helloText));
-        usart_send_string(USART3, fiveText, sizeof(fiveText));
+        usart_send_string(USART1, helloText, sizeof(helloText));
+        usart_send_string(USART1, fiveText, sizeof(fiveText));
         asm("WFI");
     }
 }
@@ -58,20 +58,20 @@ thread2(void)
 {
     while (true)
     {
-        usart_send_string(USART3, worldText, sizeof(worldText));
-        usart_send_string(USART3, oneText, sizeof(oneText));
+        usart_send_string(USART1, worldText, sizeof(worldText));
+        usart_send_string(USART1, oneText, sizeof(oneText));
         asm("WFI");
-        usart_send_string(USART3, worldText, sizeof(worldText));
-        usart_send_string(USART3, twoText, sizeof(twoText));
+        usart_send_string(USART1, worldText, sizeof(worldText));
+        usart_send_string(USART1, twoText, sizeof(twoText));
         asm("WFI");
-        usart_send_string(USART3, worldText, sizeof(worldText));
-        usart_send_string(USART3, threeText, sizeof(threeText));
+        usart_send_string(USART1, worldText, sizeof(worldText));
+        usart_send_string(USART1, threeText, sizeof(threeText));
         asm("WFI");
-        usart_send_string(USART3, worldText, sizeof(worldText));
-        usart_send_string(USART3, fourText, sizeof(fourText));
+        usart_send_string(USART1, worldText, sizeof(worldText));
+        usart_send_string(USART1, fourText, sizeof(fourText));
         asm("WFI");
-        usart_send_string(USART3, worldText, sizeof(worldText));
-        usart_send_string(USART3, fiveText, sizeof(fiveText));
+        usart_send_string(USART1, worldText, sizeof(worldText));
+        usart_send_string(USART1, fiveText, sizeof(fiveText));
         asm("WFI");
     }
 }
@@ -146,15 +146,6 @@ ker_main(void)
     disableInterrupts();
     usart_driver_init();
     usart_send_string(USART1, "hello world\n", sizeof("hello world\n"));
-    usart_send_string(USART2, "hello world\n", sizeof("hello world\n"));
-    usart_send_string(USART3, "hello world\n", sizeof("hello world\n"));
-    usart_send_string(UART4, "hello world\n", sizeof("hello world\n"));
-    usart_send_string(UART5, "hello world\n", sizeof("hello world\n"));
-    usart_send_string(USART6, "hello world\n", sizeof("hello world\n"));
-    usart_send_string(UART7, "hello world\n", sizeof("hello world\n"));
-    usart_send_string(UART8, "hello world\n", sizeof("hello world\n"));
-    usart_send_string(UART9, "hello world\n", sizeof("hello world\n"));
-    usart_send_string(UART10, "hello world\n", sizeof("hello world\n"));
 
     memoryManager.Initialize();
     kernelApi.ApiEntry = threadScheduler; // temp
@@ -164,6 +155,7 @@ ker_main(void)
     auto process2 = processManager.CreateProcess(thread2);
     startExecution(processManager.GetKernelProcess()->GetMainThread(), process1->GetMainThread(), process2->GetMainThread());
     enableInterrupts();
+    SYS_CTL->enable_sys_tick();
     SYS_CTL->set_pending_pendsv();
     for (;;) {}
 }

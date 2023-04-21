@@ -24,10 +24,9 @@ SysControlBlock::initialize(void) volatile
     RVR = RVR & ~RVR_RELOAD;
     RVR = RVR | 63999u;
 
-    /* Set clock source to external clock, enable interrupts. */
+    /* Set clock source to external clock. */
     CSR = CSR & ~CSR_CLKSOURCE;
     CSR = CSR | CSR_TICKINT;
-    CSR = CSR | CSR_ENABLE;
 
     /* Set PendSV priority to a low amount - should be the last interrupt to run */
     const uint32_t currentSHPR3 = SHPR3;
