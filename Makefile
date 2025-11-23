@@ -9,8 +9,8 @@ SRC_FILE_EXTENSION := cpp
 INCLUDES := -I.
 
 MODULES :=\
-	hw \
-	os
+	src/hw \
+	src/os
 
 include $(patsubst %,%/Makefile, $(MODULES))
 
