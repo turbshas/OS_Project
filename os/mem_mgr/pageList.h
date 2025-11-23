@@ -1,6 +1,7 @@
 #ifndef _PAGE_LIST_H
 #define _PAGE_LIST_H
 
+#include <cstdint>
 #include <cstdio>
 
 /// @brief Circular doubly-lined list of free memory blocks where the address of each item in the list is the beginning of the block.

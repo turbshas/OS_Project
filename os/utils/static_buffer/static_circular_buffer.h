@@ -2,7 +2,7 @@
 #define _STATIC_CIRCULAR_BUFFER
 
 #include <array>
-#include <cstdio>
+#include <cstdint>
 #include <cstdlib>
 
 namespace os::utils::static_buffer

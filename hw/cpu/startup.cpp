@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 extern unsigned _INITIAL_STACK_POINTER; /* Defined in linker script. Used by interrupt handlers as their stack */
 

@@ -3,6 +3,7 @@
 
 #include "linked_list_iterator.hpp"
 #include "list_item.hpp"
+#include <cstdint>
 #include <cstdio>
 
 namespace os::utils::linked_list

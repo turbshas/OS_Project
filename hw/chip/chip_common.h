@@ -2,6 +2,7 @@
 #define _CHIP_COMMON_H
 
 #include <stdio.h>
+#include <stdint.h>
 
 #define SRAM_BASE 0x20000000u
 #define SRAM_SIZE (128 * 1024)

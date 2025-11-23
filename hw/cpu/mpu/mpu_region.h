@@ -1,7 +1,7 @@
 #ifndef _MPU_REGION_H
 #define _MPU_REGION_H
 
-#include <cstdio>
+#include <cstdint>
 
 /*
  * These 2 are flags to go along with MPU_TEX_CACHE_MEM.

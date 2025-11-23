@@ -3,7 +3,7 @@
 
 #include "mem_region.hpp"
 #include "pageList.h"
-#include <cstdio>
+#include <cstdint>
 
 #define PAGE_SIZE (2 * 1024)
 

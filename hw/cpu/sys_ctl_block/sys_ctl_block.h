@@ -1,7 +1,7 @@
 #ifndef _SYS_CTL_BLOCK_H
 #define _SYS_CTL_BLOCK_H
 
-#include <stdio.h>
+#include <cstdint>
 
 #define CSR_COUNTFLAG (1u << 16)
 #define CSR_CLKSOURCE (1u << 2)

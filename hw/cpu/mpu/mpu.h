@@ -1,7 +1,7 @@
 #ifndef MPU_H
 #define MPU_H
 
-#include <cstdio>
+#include <cstdint>
 
 #include "mpu_region.h"
 

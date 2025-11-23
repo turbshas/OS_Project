@@ -2,7 +2,7 @@
 #define ALLOC_H
 
 #include "mem_region.hpp"
-#include <cstdio>
+#include <cstdint>
 
 using AllocFunc = MemRegion (*const)(const size_t size);
 using AllocCompleteCallback = void (*const)(const MemRegion& memRegion);

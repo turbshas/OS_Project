@@ -1,7 +1,6 @@
 {
     "C_Cpp.errorSquiggles": "enabled",
     "makefile.phonyOnlyTargets": true,
-    "makefile.launchConfigurations": [
-    ],
-    "editor.formatOnSave": true
+    "makefile.launchConfigurations": [],
+    "editor.formatOnSave": false
 }
