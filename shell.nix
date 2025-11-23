@@ -5,10 +5,15 @@ let
 in
 {
     devShells.${system}.default = pkgs.mkShell {
-        packages = [
-            pkgs.gcc-arm-embedded
-            pkgs.gnumake
-            pkgs.qemu
+        packages = with pkgs; [
+            gcc-arm-embedded
+            gnumake
+            qemu
+            rustc
+            cargo
+            rust-analyzer
+            rustfmt
+            clang
         ];
     };
 }

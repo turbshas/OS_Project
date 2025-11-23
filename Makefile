@@ -93,7 +93,7 @@ test_run: $(BINARY)
 	$(TEST_QEMU) -serial stdio -gdb tcp::$(GDB_PORT),server -machine STM32F4-Discovery -mcu STM32F429ZI -cpu cortex-m4 -kernel $< -S
 
 base_qemu_run: $(BINARY)
-	qemu-system-arm -d guest_errors,unimp -serial stdio -gdb tcp::63770,server -machine netduinoplus2 -cpu cortex-m3 -bios ./build/startup.bin -S
+	qemu-system-arm -d guest_errors,unimp -serial stdio -gdb tcp::63770,server -machine netduinoplus2 -cpu cortex-m4 -bios ./build/startup.bin -S
 
 run: $(BINARY)
 	$(QEMU) -rtc base=localtime -serial null -serial null -serial stdio -gdb tcp::$(GDB_PORT),server -machine pebble-bb2 -cpu cortex-m3 -pflash $< -S

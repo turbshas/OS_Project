@@ -8,3 +8,8 @@ build/**
 .vscode/*.log
 .direnv
 
+
+
+# Added by cargo
+
+/target
