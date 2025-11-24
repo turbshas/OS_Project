@@ -1,5 +1,7 @@
-MAKEFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
-MAKEFILE_DIR := $(patsubst %/,%, $(dir $(MAKEFILE_PATH)))
 MAIN_MAKEFILE_DIR := ../../..
 
-include $(MAKEFILE_DIR)/$(MAIN_MAKEFILE_DIR)/template.mk
+ifeq ($(MAKELEVEL),0)
+include $(MAIN_MAKEFILE_DIR)/template.mk
+else
+include template.mk
+endif
