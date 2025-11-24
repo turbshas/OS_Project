@@ -23,7 +23,7 @@ DEP_FILES := $(OBJ_FILES:.o=.$(DEP_FILE_EXTENSION))
 CC := arm-none-eabi-g++
 OBJCOPY := arm-none-eabi-objcopy
 
-LINKER_SCRIPT := build/startup.ld.preproc
+LINKER_SCRIPT := build/src/startup.ld.preproc
 ELF := build/startup.elf
 BINARY := build/startup.bin
 
@@ -67,7 +67,7 @@ build/%.o: %.$(SRC_FILE_EXTENSION)
 	$(HIDE_OUTPUT)mkdir -p $(dir $@)
 	$(HIDE_OUTPUT)$(CC) -c -MMD $(COMPILE_FLAGS) $(INCLUDES) $< -o $@
 
-$(LINKER_SCRIPT): startup.ld
+$(LINKER_SCRIPT): src/startup.ld
 	@echo "    GEN   $(notdir $@)"
 	$(HIDE_OUTPUT)mkdir -p $(dir $@)
 	$(HIDE_OUTPUT)$(CC) -E -x c $< | grep -v "^#" > $@
