@@ -3,8 +3,8 @@
         {
             "name": "STM32F2/4",
             "includePath": [
-                "${workspaceFolder}/hw/**",
-                "${workspaceFolder}/os/**"
+                "${workspaceFolder}/src/hw/**",
+                "${workspaceFolder}/src/os/**"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/arm-none-eabi-g++",
